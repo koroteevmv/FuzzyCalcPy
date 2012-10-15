@@ -587,7 +587,7 @@ class Tree(Domain):
         return self.childs[param]
         pass
 
-##if __name__ == "__main__":
-##    import doctest
-####    doctest.testmod(verbose=False)
-##    doctest.testmod(verbose=True)
+if __name__ == "__main__":
+    import doctest
+##    doctest.testmod(verbose=False)
+    doctest.testmod(verbose=True)

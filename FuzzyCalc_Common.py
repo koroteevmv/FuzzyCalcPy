@@ -30,6 +30,3 @@ def Nedosekin(NPV, G):
     ch=sum1/summ
     risk=sum2/summ
     return risk
-
-def only_subsets(a):
-    for i in a
