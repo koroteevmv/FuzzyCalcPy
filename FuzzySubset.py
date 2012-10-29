@@ -174,7 +174,7 @@ class Subset:
         '''
         x=[]
         y=[]
-        for i in self.traversal():
+        for i in self.Domain:
             v=self.value(i)
             x.append(i)
             y.append(v)

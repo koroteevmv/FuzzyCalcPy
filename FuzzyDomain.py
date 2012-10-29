@@ -227,7 +227,7 @@ class RationalRange(Domain):
     def __init__(self, begin=0.0, end=1.0, acc=ACCURACY):
         self.begin=float(begin)
         self.end=float(end)
-        self.acc=float(acc)
+        self.acc=acc
         pass
     def __iter__(self):
         if (self.begin==self.end):
