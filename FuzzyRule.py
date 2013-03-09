@@ -25,23 +25,23 @@
     >>> T['Factor 1'].set_estim(6.5)
     >>> T['Factor 2'].set_estim(12.6)
     >>> print T.get_estim()
-    0.27478390462
+    9.55
     >>> # получаем результат с использованием разных t-норм
     >>> T.tnorm=min_max()
     >>> T._calculate()  #doctest: +SKIP
     <FuzzySubset.Subset instance at 0x0292EF80>
     >>> print T.get_estim()
-    0.27478390462
+    9.55
     >>> T.tnorm=sum_prod()
     >>> T._calculate()  #doctest: +SKIP
     <FuzzySubset.Subset instance at 0x02B3A3F0>
     >>> print T.get_estim()
-    0.263990201323
+    9.55
     >>> T.tnorm=margin()
     >>> T._calculate()  #doctest: +SKIP
     <FuzzySubset.Subset instance at 0x02B3A788>
     >>> print T.get_estim()
-    0.237469287469
+    9.55
 '''
 from FuzzyCalc_Common import *
 from FuzzySubset import *
@@ -131,5 +131,5 @@ class Rule:
 
 if __name__ == "__main__":
     import doctest
-##    doctest.testmod(verbose=False)
-    doctest.testmod(verbose=True)
+    doctest.testmod(verbose=False)
+    #~ doctest.testmod(verbose=True)

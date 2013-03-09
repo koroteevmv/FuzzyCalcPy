@@ -16,7 +16,6 @@
 используются в качестве значений лингвистических переменных вместо обычных
 чисел.
 '''
-
 # -*- coding: UTF-8 -*-
 
 from FuzzyCalc_Common import *
@@ -55,40 +54,79 @@ class FuzzySet:
     end  =1.0
     Sets={}
     name=''
+    
     def __init__(self, begin, end, name=''):
+        '''
+            >>> A = FuzzySet(0, 10, 'Sample fuzzy set')
+            >>> print A.begin
+            0.0
+            >>> print A.end
+            10.0
+            >>> print A.name
+            Sample fuzzy set
+
+        '''
         self.begin=float(begin)
         self.end=float(end)
         self.Sets={}
         self.name=name
+        
     def __iter__(self):
         '''Процедура перебора термов классификатора.
         Синтаксис:
-            >>> for term in Classifier:
-            >>>     print term.centr()
+            >>> C = Classifier(p=[0.0, 0.3, 1.0])
+            >>> for i in C:
+            ...     print i
+            ... 
+            0.433333333333
+            0.100066666667
+            0.766822222222
+            >>> for i in C:
+            ...     print i.centr()
+            ... 
+            0.433333333333
+            0.100066666667
+            0.766822222222
+
         '''
         for i in self.Sets.iterkeys():
-            yield i
+            yield self[i]
+            
     def __getitem__(self, param):
         '''
         Для быстрого доступа к подмножеству нечеткого множества, терму
         классификатора или значению лингвистической переменной можно
         использовать следующий синтаксис:
-            >>> Clas=Classifier(p=[0.0, 0.1, 0.3, 0.4, 0.6, 1.0], u=1.2)
-            >>> Clas['1']
+            >>> C = Classifier(p=[0.0, 0.3, 1.0])
+            >>> C['0'].centr()
+            0.10006666666666648
+            >>> C['0'].card()
+            0.15000000000000002
+            >>> C['0'].begin
+            0.0
+            >>> C['1'].mode()
+            0.3
+            >>> C['2'].mode()
+            1.0
+            >>> C['0'].mode()
+            0.0
+
+
         '''
         return self.Sets[param]
+        
     def add_term(self, sub, name=''):
         '''
         Добавляет терм к данному классификатору. Порядок термов не важен.
         Синтаксис:
-        >>> A=FuzzySet(0, 100)
-        >>> S=Gaussian(20, 10)
-        >>> A.add_term(S, name='term1')
-        >>> A.Sets['term1'].mu
-        20.0
-        >>> A.add_term(Triangle(30, 50, 75), name='term2')
-        >>> A.Sets['term2'].b
-        50.0
+            >>> A=FuzzySet(0, 100)
+            >>> S=Gaussian(20, 10)
+            >>> A.add_term(S, name='term1')
+            >>> A.Sets['term1'].mu
+            20.0
+            >>> A.add_term(Triangle(30, 50, 75), name='term2')
+            >>> A.Sets['term2'].b
+            50.0
 
         Параметры:
         S
@@ -100,18 +138,31 @@ class FuzzySet:
             ключ ассоциативного массива Sets
 
         '''
-##        sub.begin=self.begin
-##        sub.end=self.end
         self.Sets[name]=sub
+        
     def find(self, x, term):
         '''
         Возвращает значение принадлежности точки x терму term
         Синтаксис:
-            >>> for key, value in Clas.Sets.iteritems():
-            >>>    sum+=Clas.find(i, key)
+            >>> C = Classifier(p=[0.0, 0.3, 1.0])
+            >>> C.find(0, '0')
+            0.0
+            >>> C.find(0.12, '0')
+            0.6
+            >>> C.find(0.12, '1')
+            0.4
+            >>> C.find(0.12, '2')
+            0.0
+            >>> C.find(0.5, '0')
+            0.0
+            >>> round(C.find(0.65, '1'), 3)
+            0.5
+            >>> round(C.find(0.65, '2'), 3)
+            0.5
+
         '''
         return self.Sets[term].value(x)
-        pass
+        
     def classify(self, ss):
         '''
         Возвращает имя терма, наиболее соответствующего переданному элементу.
@@ -136,7 +187,7 @@ class FuzzySet:
             >>> C.classify(Triangle(-1.4, 0.0, 0.6))
             'I'
         '''
-        # XXX различные методы классификации: встроить как поле в классификатор?
+        # TODO: различные методы классификации: встроить как поле в классификатор?
         res={}
         if isinstance(ss, Subset):
             for i in self.Sets.iterkeys():
@@ -153,39 +204,19 @@ class FuzzySet:
                 maxim=res[i]
                 name=i
         return name
-    def __str__(self, ss):
-        '''
-        Процедура для вывода описания классификатора в текстовом виде
-        Синтаксис:
-            >>> print Classifier
-        '''
-        res={}
-        if isinstance(ss, Subset):
-            for i in self.Sets.iterkeys():
-                t=ss & self.Sets[i]
-                r=t.card()
-                if r<>0.0:res[i]=r
-        else:
-            for i in self.Sets.iterkeys():
-                t=self.Sets[i].value(ss)
-                if t<>0.0:res[i]=t
-        return res
+
     def plot(self):
         '''
         Отображает нечеткое множество графически. Все термы представляются на
         одном графике.
+        Синтаксис:
+            >>> C = Classifier(p=[0.0, 0.3, 1.0])
+            >>> C.plot()
         '''
         labels=[]
         for name, sub in self.Sets.iteritems():
             sub.plot(verbose=False)
-##            x=[]
-##            y=[]
-##            for i in self.traversal():
-##                x.append(i)
-##                y.append(sub.value(i))
-##            p.plot(x, y)
             labels.append(name)
-##            print sub
         p.legend(labels, loc='upper right')
         p.plot(self.begin, 1.01)
         p.plot(self.end+(self.end-self.begin)/5, -0.01)
@@ -265,12 +296,40 @@ class TriangleClassifier(FuzzySet):
     names=[]
     edge=0
     cross=1
+    
     def __init__(self, begin=0.0, end=1.0, name='', names=[], edge=False, cross=1.0):
+        '''
+        Синтаксис:
+            >>> A = TriangleClassifier(begin=0, end=100, name='Sample classifier', names=['low', 'middle', 'high'], edge=True, cross=2)
+            >>> print A.begin
+            0.0
+            >>> print A.end
+            100.0
+            >>> print A['low']
+            25.0
+            >>> print A['low'].mode()
+            25.0
+            >>> print A['middle'].mode()
+            50.0
+            >>> print A['high'].mode()
+            75.0
+            >>> A = TriangleClassifier(names=['low', 'middle', 'high'])
+            >>> print A.begin
+            0.0
+            >>> print A.end
+            1.0
+            >>> print A['low'].mode()
+            0.0
+            >>> print A['middle'].mode()
+            0.5
+            >>> print A['high'].mode()
+            1.0
+
+        '''
         self.begin=float(begin)
         self.end=float(end)
         self.Sets={}
         self.name=name
-##        print names
         if not names: return None
         if not edge:
             wide=(end-begin)*(cross)/(len(names)*2-2)
@@ -281,9 +340,9 @@ class TriangleClassifier(FuzzySet):
             step=(end-begin)/(len(names)+1.0)
             p=(end-begin)/(len(names)+1.0)
         for name in names:
-##            print name, p
             self.add_term(Triangle(p-wide, p, p+wide), name=name)
             p=p+step
+            
 class GaussianClassifier(FuzzySet):
     '''
     Равномерный классификатор с термами в виде гауссиан.
@@ -293,7 +352,22 @@ class GaussianClassifier(FuzzySet):
 
     Параметры конструктора (см. FuzzySet, TriangleClassifier):
     '''
+    
     def __init__(self, begin=0.0, end=1.0, name='', names=[], edge=0, cross=1.0):
+        '''
+        Синтаксис:
+            >>> A = GaussianClassifier(names=['low', 'middle', 'high'])
+            >>> print A.begin
+            0.0
+            >>> print A.end
+            1.0
+            >>> print A['low'].mode()
+            0.0
+            >>> print A['middle'].mode()
+            0.5
+            >>> print A['high'].mode()
+            1.0
+        '''
         self.begin=float(begin)
         self.end=float(end)
         self.Sets={}
@@ -310,6 +384,7 @@ class GaussianClassifier(FuzzySet):
         for name in names:
             self.add_term(Gaussian(p, wide), name=name)
             p=p+step
+            
 def std_2_Classificator(begin=0.0, end=1.0, name='', gauss=False):
         '''
         Процедура создания равномерного линейного или гауссового классификатора,
@@ -318,6 +393,7 @@ def std_2_Classificator(begin=0.0, end=1.0, name='', gauss=False):
         создание классификаторов.
         Синтаксис:
             >>> D=std_2_Classificator(begin=0, end=100, name='percentage', gauss=True)
+            
         Параметры:
             begin, end
                 задают границы области определения классификатора
@@ -331,6 +407,7 @@ def std_2_Classificator(begin=0.0, end=1.0, name='', gauss=False):
             return GaussianClassifier(begin=begin, end=end, names=['I', 'II'], name=name, cross=2.0)
         else:
             return TriangleClassifier(begin=begin, end=end, names=['I', 'II'], name=name, cross=2.0)
+            
 def std_3_Classificator(begin=0.0, end=1.0, name='', gauss=False):
         '''
         Процедура создания равномерного линейного или гауссового классификатора,
@@ -339,6 +416,7 @@ def std_3_Classificator(begin=0.0, end=1.0, name='', gauss=False):
         создание классификаторов.
         Синтаксис:
             >>> D=std_3_Classificator(begin=0, end=100, name='percentage', gauss=True)
+            
         Параметры:
             begin, end
                 задают границы области определения классификатора
@@ -352,6 +430,7 @@ def std_3_Classificator(begin=0.0, end=1.0, name='', gauss=False):
             return GaussianClassifier(begin=begin, end=end, names=['I', 'II', 'III'], name=name, cross=2.0)
         else:
             return TriangleClassifier(begin=begin, end=end, names=['I', 'II', 'III'], name=name, cross=2.0)
+            
 def std_5_Classificator(begin=0.0, end=1.0, name='', gauss=False):
         '''
         Процедура создания равномерного линейного или гауссового классификатора,
@@ -360,6 +439,7 @@ def std_5_Classificator(begin=0.0, end=1.0, name='', gauss=False):
         создание классификаторов.
         Синтаксис:
             >>> D=std_5_Classificator(begin=0, end=100, name='percentage', gauss=True)
+
         Параметры:
             begin, end
                 задают границы области определения классификатора
@@ -373,6 +453,7 @@ def std_5_Classificator(begin=0.0, end=1.0, name='', gauss=False):
             return GaussianClassifier(begin=begin, end=end, names=['I', 'II', 'III', 'IV', 'V'], name=name, cross=2.0)
         else:
             return TriangleClassifier(begin=begin, end=end, names=['I', 'II', 'III', 'IV', 'V'], name=name, cross=2.0)
+            
 def std_7_Classificator(begin=0.0, end=1.0, name='', gauss=False):
         '''
         Процедура создания равномерного линейного или гауссового классификатора,
@@ -381,6 +462,7 @@ def std_7_Classificator(begin=0.0, end=1.0, name='', gauss=False):
         создание классификаторов.
         Синтаксис:
             >>> D=std_7_Classificator(begin=0, end=100, name='percentage', gauss=True)
+
         Параметры:
             begin, end
                 задают границы области определения классификатора
@@ -394,6 +476,7 @@ def std_7_Classificator(begin=0.0, end=1.0, name='', gauss=False):
             return GaussianClassifier(begin=begin, end=end, names=['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'], name=name, cross=2.0)
         else:
             return TriangleClassifier(begin=begin, end=end, names=['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'], name=name, cross=2.0)
+            
 
 class Classifier(FuzzySet):
       '''
@@ -404,6 +487,7 @@ class Classifier(FuzzySet):
       Термы классификатора именуются арабскими числами, начиная с 1.
       Синтаксис:
         >>> Clas=Classifier(p=[0.0, 0.1, 0.3, 0.4, 0.6, 1.0], u=0.2)
+        
       Параметры:
         name
             имя классификатора
@@ -419,6 +503,29 @@ class Classifier(FuzzySet):
             u=1 ФП термов становятся треугольными.
       '''
       def __init__(self, begin=0.0, end=1.0, p=[], u=1.0, name=''):
+          '''
+                >>> A = Classifier(begin=10, end=20, p=[10, 13, 15, 20], u=0.2, name='sample classifier')
+                >>> print A.begin
+                10.0
+                >>> print A.end
+                20.0
+                >>> print A.name
+                sample classifier
+                >>> print A.Sets.keys()
+                ['1', '0', '3', '2']
+                >>> print A['0'].mode()
+                10.0
+                >>> print A['0'].begin
+                10.0
+                >>> print A['0'].end
+                11.709632851
+                >>> print A['1'].mode()
+                11.709632851
+                >>> print A['1'].begin
+                11.290367149
+                >>> print A['1'].end
+                14.139755234
+          '''
           self.begin=float(begin)
           self.end=float(end)
           self.Sets={}
@@ -438,7 +545,7 @@ class Classifier(FuzzySet):
               Ss=Trapezoidal(begin=a, begin_tol=b, end_tol=c, end=d)
               self.add_term(Ss, name=str(i))
 
-##if __name__ == "__main__":
-##    import doctest
-####    doctest.testmod(verbose=False)
-##    doctest.testmod(verbose=True)
+if __name__ == "__main__":
+    import doctest
+#    doctest.testmod(verbose=False)
+    doctest.testmod(verbose=True)

@@ -468,7 +468,7 @@ class Tree(Domain):
         branch 2 - None (1.0)
         branch 3 - None (1.0)
         tree - None (1.0)
-        >>>A=Tree('name', estim=2.5, weight=0.23, clas=std_3_Classifier(), tnorm=sum_prod)
+        >>> A=Tree('name', estim=2.5, weight=0.23, clas=std_3_Classifier(), tnorm=sum_prod)
 
     Параметры:
         name
@@ -554,7 +554,6 @@ class Tree(Domain):
         '''
         Описание
         Синтаксис:
-            >>>
         Параметры:
             Параметр
                 описание
@@ -589,5 +588,5 @@ class Tree(Domain):
 
 if __name__ == "__main__":
     import doctest
-##    doctest.testmod(verbose=False)
-    doctest.testmod(verbose=True)
+    doctest.testmod(verbose=False)
+    #~ doctest.testmod(verbose=True)

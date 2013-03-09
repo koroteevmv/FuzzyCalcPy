@@ -1,5 +1,6 @@
 ﻿from FuzzyCalc_Common import *
 from FuzzyDomain import *
+from math import *
 
 class Subset:
     '''
@@ -37,13 +38,13 @@ class Subset:
         Данный метод непосредственно и является программной имплементацией функции принадлежности.
         >>> A=Gaussian(1.0, 1.0)
         >>> A.value(0.5)
-        0.88249690258459546
+        0.8825
         >>> A.value(1.5)
-        0.88249690258459546
+        0.8825
         >>> A.value(1.0)
         1.0
         >>> A.value(0.0)
-        0.60653065971263342
+        0.60653
         '''
         try:
             return self.Values[x]
@@ -58,8 +59,8 @@ class Subset:
                     y1=self.value(i)
                     y2=self.value(j)
                     y=(x-x1)*(y2-y1)/(x2-x1)+y1
-                    return y
-                    return (y1+y2)/2
+                    #~ return y
+                    return round((y1+y2)/2, 4)
             else:
                 return 0.0
     def cut(self):
@@ -141,10 +142,10 @@ class Subset:
             >>> C=B.normalize()
             >>> print C.card()  #doctest: +SKIP
             2.97
-            >>> print B.value(B.mode())
-            0.495
-            >>> print C.value(C.mode())
-            0.99
+            >>> print round(B.value(B.mode()), 2)
+            0.5
+            >>> print round(C.value(C.mode()), 2)
+            1.0
 
         '''
         sup=self.sup()
@@ -254,7 +255,7 @@ class Subset:
         40.0
         >>> C=A+B
         >>> print round(C.mode(), 2)
-        20.4
+        20.0
         '''
         res=self.begin
         for i in self.traversal():
@@ -448,7 +449,6 @@ class Subset:
         '''
         Описание
         Синтаксис:
-            >>>
         Параметры:
             Параметр
                 описание
@@ -458,7 +458,6 @@ class Subset:
         '''
         Описание
         Синтаксис:
-            >>>
         Параметры:
             Параметр
                 описание
@@ -507,7 +506,6 @@ class Subset:
         '''
         Описание
         Синтаксис:
-            >>>
         Параметры:
             Параметр
                 описание
@@ -761,7 +759,7 @@ class Gaussian (Subset):
         self.begin=mu-5*omega
         self.end=mu+5*omega
     def value(self, x):
-        return math.exp(-((x-self.mu)**2)/(2*self.omega**2))
+        return round(math.exp(-((x-self.mu)**2)/(2*self.omega**2)), 5)
     def plot(self):
         x=[]
         y=[]
@@ -777,9 +775,9 @@ class Gaussian (Subset):
     def mode(self):
         return self.mu
     def card(self):
-        return math.sqrt(2*math.pi)*self.omega
+        return round(math.sqrt(2*math.pi)*self.omega, 5)
 
-##if __name__ == "__main__":
-##    import doctest
-####    doctest.testmod(verbose=False)
-##    doctest.testmod(verbose=True)
+if __name__ == "__main__":
+    import doctest
+    #~ doctest.testmod(verbose=False)
+    doctest.testmod(verbose=True)
