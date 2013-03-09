@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 from FuzzyCalc_Common import *
 from FuzzyDomain import *
+from FuzzyRule import *
 
 class Controller():
     '''

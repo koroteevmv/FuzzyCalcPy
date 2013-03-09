@@ -1,4 +1,4 @@
-﻿# -*- coding: UTF-8 -*-
+# -*- coding: UTF-8 -*-
 
 '''Модуль для работы с механизмом нечеткого вывода.
 
@@ -116,16 +116,6 @@ class Ruled(Tree):
                 alpha=self.tnorm.t_norm(alpha, mem)
 ##                print rule.name, fact, mem, alpha
             rule.alpha=alpha
-
-class Rule:
-    ant={}
-    concl=''
-    name=''
-    alpha=''
-    def __init__(self, ant={}, concl='',  name=''):
-        self.concl=concl
-        self.name=name
-        self.ant=ant
 
 # XXX интерфейс FES с модельными параметрами и возможностью задания пользовательских и изменения на лету.
 
