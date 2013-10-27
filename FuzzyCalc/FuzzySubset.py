@@ -108,7 +108,8 @@ class Subset:
         for i in sorted(self.Values.keys()):
             print i, self.Values[i]
         print
-        for x in self.traversal():
+        
+        for x in self.Domain:
             print x, ":"
             try:
                 print self.Values[x]
@@ -183,11 +184,11 @@ class Subset:
         if isinstance(self.Domain, IntegerRange):
         # TODO построение графиков НПМ на целочисленных интервалах.
             pass
-        p.plot(self.begin, 1.2)
-        p.plot(self.end+(self.end-self.begin)/3, -0.1)
+        ##p.plot(self.begin, 1.2)
+        ##p.plot(self.end+(self.end-self.begin)/3, -0.1)
         if verbose:
-           p.text(self.begin, 0.0, str(self.begin))
-           p.text(self.end, 0.0, str(self.end))
+           ##p.text(self.begin, 0.0, str(self.begin))
+           ##p.text(self.end, 0.0, str(self.end))
 ##           p.text(self.mode(), 1.0, str(self.mode()))
 ##           p.text(self.centr(), 0.5, str(self.centr()))
            for i in self.Points.iterkeys():
@@ -239,7 +240,7 @@ class Subset:
         '''
         summ=0.0
         j=0
-        for i in self.traversal():
+        for i in self.Domain:
             summ+=self.value(i)
             j+=1
         return summ*(self.end-self.begin) / self.Domain.acc
@@ -258,7 +259,7 @@ class Subset:
         20.0
         '''
         res=self.begin
-        for i in self.traversal():
+        for i in self.Domain:
             if self.value(i)>self.value(res): res=i
         return res
     def Euclid_distance(self, other): # XXX расстояние Евклида
@@ -331,11 +332,11 @@ class Subset:
             raise NotImplemented
         begin=min(self.begin, other.begin)
         end=max(self.end, other.end)
-        res=Subset(begin, end)
-        for i in res.traversal():
+        res=Subset(domain=RationalRange(begin, end))
+        for i in res.Domain:
             ii=self.value(i)
             jj=other.value(i)
-            res.set(i, min(ii+jj, 1))
+            res.set(i, min(ii+jj, 1))       # TODO: вставить t-нормы
         return res
     def __sub__(self, other):
         if isinstance(self, Point) or isinstance(other, Point):
@@ -344,8 +345,8 @@ class Subset:
             raise NotImplemented
         begin=min(self.begin, other.begin)
         end=max(self.end, other.end)
-        res=Subset(begin, end)
-        for i in res.traversal():
+        res=Subset(domain=RationalRange(begin, end))
+        for i in res.Domain:
             ii=self.value(i)
             jj=other.value(i)
             res.set(i, max(ii-jj, 0))
@@ -356,15 +357,15 @@ class Subset:
         if isinstance(other, float) or isinstance(other, int):
             begin=self.begin
             end=self.end
-            res=Subset(begin, end)
-            for i in res.traversal():
+            res=Subset(domain=RationalRange(begin, end))
+            for i in res.Domain:
                 ii=self.value(i)
                 res.set(i, min(ii*other, 1))
             return res
         begin=min(self.begin, other.begin)
         end=max(self.end, other.end)
-        res=Subset(begin, end)
-        for i in res.traversal():
+        res=Subset(domain=RationalRange(begin, end))
+        for i in res.Domain:
             ii=self.value(i)
             jj=other.value(i)
             res.set(i, ii*jj)
@@ -374,8 +375,8 @@ class Subset:
             raise NotImplemented
         begin=self.begin
         end=self.end
-        res=Subset(begin, end)
-        for i in res.traversal():
+        res=Subset(domain=RationalRange(begin, end))
+        for i in res.Domain:
             ii=self.value(i)
             res.set(i, min(ii**other, 1))
         return res
@@ -409,13 +410,6 @@ class Subset:
         return res
     def __abs__(self):
         return self.card()
-    def traversal(self): # TODO избавиться от метода traversal.
-##        print self.begin, self.end
-        begin=self.begin
-        delta=(self.end-self.begin)/ACCURACY
-        while begin<=self.end:
-            yield begin
-            begin+=delta
     def __str__(self):
 ##        self.plot()
         return str(self.centr())
@@ -467,8 +461,8 @@ class Subset:
         sum1=0.0
         sum2=0.0
         card=(self.card()*other.card())
-        for npv in self.traversal():
-            for g in other.traversal():
+        for npv in self.Domain:
+            for g in other.Domain:
                 chances=self.value(npv)*other.value(g)/card
                 summ+=chances
                 if npv>=g:
@@ -515,8 +509,8 @@ class Subset:
         sum1=0.0
         sum2=0.0
         card=(self.card()*other.card())
-        for npv in self.traversal():
-            for g in other.traversal():
+        for npv in self.Domain:
+            for g in other.Domain:
                 chances=self.value(npv)*other.value(g)/card
                 summ+=chances
                 if npv>=g:
@@ -758,18 +752,19 @@ class Gaussian (Subset):
         self.omega=float(omega)
         self.begin=mu-5*omega
         self.end=mu+5*omega
+        self.Domain=RationalRange(self.begin, self.end)
     def value(self, x):
         return round(math.exp(-((x-self.mu)**2)/(2*self.omega**2)), 5)
-    def plot(self):
-        x=[]
-        y=[]
-        for i in self.traversal():
-            v=self.value(i)
-            x.append(i)
-            y.append(v)
-        p.plot(x, y)
-        p.plot(self.end+(self.end-self.begin)/3, -0.1)
-        p.text(self.mu, 1.00, str(self.mu))
+    ##def plot(self):
+        ##x=[]
+        ##y=[]
+        ##for i in self.traversal():
+            ##v=self.value(i)
+            ##x.append(i)
+            ##y.append(v)
+        ##p.plot(x, y)
+        ##p.plot(self.end+(self.end-self.begin)/3, -0.1)
+        ##p.text(self.mu, 1.00, str(self.mu))
     def centr(self):
         return self.mu
     def mode(self):

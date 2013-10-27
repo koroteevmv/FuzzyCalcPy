@@ -1,4 +1,10 @@
-﻿''' Модуль для работы с нечеткими множествами
+# -*- coding: UTF-8 -*-
+
+from FuzzyCalc_Common import *
+from FuzzySubset import *
+from FuzzyNumbers import *
+
+''' Модуль для работы с нечеткими множествами
 
 Модуль реализует функциональность аппарата нечеткой логики в части работы с
 нечеткими множествами. Он включает:
@@ -16,11 +22,6 @@
 используются в качестве значений лингвистических переменных вместо обычных
 чисел.
 '''
-# -*- coding: UTF-8 -*-
-
-from FuzzyCalc_Common import *
-from FuzzySubset import *
-from FuzzyNumbers import *
 
 class FuzzySet:
     '''
@@ -54,6 +55,7 @@ class FuzzySet:
     end  =1.0
     Sets={}
     name=''
+    Domain=RationalRange()
     
     def __init__(self, begin, end, name=''):
         '''
@@ -70,6 +72,7 @@ class FuzzySet:
         self.end=float(end)
         self.Sets={}
         self.name=name
+        self.Domain = RationalRange(begin, end)
         
     def __iter__(self):
         '''Процедура перебора термов классификатора.
@@ -139,6 +142,7 @@ class FuzzySet:
 
         '''
         self.Sets[name]=sub
+        sub.Domain = self.Domain
         
     def find(self, x, term):
         '''
@@ -218,8 +222,8 @@ class FuzzySet:
             sub.plot(verbose=False)
             labels.append(name)
         p.legend(labels, loc='upper right')
-        p.plot(self.begin, 1.01)
-        p.plot(self.end+(self.end-self.begin)/5, -0.01)
+        ##p.plot(self.begin, 1.01)
+        ##p.plot(self.end+(self.end-self.begin)/5, -0.01)
         p.title(self.name)
         p.grid()
 
@@ -297,7 +301,7 @@ class TriangleClassifier(FuzzySet):
     edge=0
     cross=1
     
-    def __init__(self, begin=0.0, end=1.0, name='', names=[], edge=False, cross=1.0):
+    def __init__(self, begin=0.0, end=1.0, name='', names=[], edge=False, cross=2.0):
         '''
         Синтаксис:
             >>> A = TriangleClassifier(begin=0, end=100, name='Sample classifier', names=['low', 'middle', 'high'], edge=True, cross=2)
@@ -353,7 +357,7 @@ class GaussianClassifier(FuzzySet):
     Параметры конструктора (см. FuzzySet, TriangleClassifier):
     '''
     
-    def __init__(self, begin=0.0, end=1.0, name='', names=[], edge=0, cross=1.0):
+    def __init__(self, begin=0.0, end=1.0, name='', names=[], edge=0, cross=2.0):
         '''
         Синтаксис:
             >>> A = GaussianClassifier(names=['low', 'middle', 'high'])
@@ -374,7 +378,7 @@ class GaussianClassifier(FuzzySet):
         self.name=name
         if not names: return None
         if edge==0:
-            wide=(end-begin)*(cross)/(len(names)*2-2)
+            wide=(end-begin)*(cross)/(len(names)*4-2)
             step=(end-begin)/(len(names)-1)
             p=0
         else:
