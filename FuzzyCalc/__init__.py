@@ -1,4 +1,0 @@
-'''
-'''
-
-from .aggregation import AggregationMetod
