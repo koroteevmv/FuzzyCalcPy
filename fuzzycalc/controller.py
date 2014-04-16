@@ -1,9 +1,13 @@
 # -*- coding: UTF-8 -*-
-from FuzzyCalc_Common import *
-from FuzzyDomain import *
-from FuzzyRule import *
 
-class Controller():
+'''
+'''
+
+from .aggregation import Simple, Tree, rules
+from .tnorm import MinMax
+
+
+class Controller(object):
     '''
     Данный класс представляет интерфейс для создания нечеткого контроллера со
     множественными входами и выходами. Входом нечеткого контроллера называется
@@ -17,7 +21,7 @@ class Controller():
     Синтаксис:
         >>>
     Параметры конструктора:
-        input
+        input_
             C помощью этого параметра задаются входные переменные контроллера.
             В этот параметр следует передать ассоциативный массив, ключами
             которого являются строки-имена входных переменных, а значениями -
@@ -39,162 +43,164 @@ class Controller():
         tnorm
             Определяет пару треугольных норм и конорм
     Поля класса:
-        Trees
+        trees
             Ассоциативный массив, ключами которого являются имена выходных
             переменных контроллера, а значениями - соответствующие им деревья
             (см. FuzzyDomain.Tree)
-        Inputs
+        inputs
             Ассоциативный массив, ключами которого являются имена входных
             переменных контроллера, а значениями - соответствующие им множества
             терм-значений (классификаторы). См. FuzzySet.FuzzySet
         method
         tnorm
     '''
-    Trees={}
-    Inputs={}
-    method=None
-    tnorm=None
-    def __init__(self, input={}, out={}, rules=[], method=simple(), tnorm=min_max()):
+
+    trees = {}
+    inputs = {}
+    method = None
+    tnorm = None
+
+    def __init__(self, input_=None,
+                        out=None,
+                        rules=None,
+                        method=Simple(),
+                        tnorm=MinMax()):
         '''
         Описание
         Синтаксис:
             >>>
         '''
-        self.Trees={}
-        self.Inputs={}
-        self.method=method
-        self.tnorm=tnorm
-        for name in input.iterkeys():
-            T=Tree(name=name, clas=input[name])
-            self.Inputs[name]=T
-        for name in out.iterkeys():
-            T=Tree(name=name, clas=out[name], agg=self.method(), tnorm=self.tnorm)
-            for tree in self.Inputs.itervalues():
-                T.add(tree)
-            self.Trees[name]=T
-            pass
-        if isinstance(self.method(), FuzzyDomain.rules):
-            i=0
-##            print 'Adding rules...'
-            for rule in rules:
-                ant, conc=rule
-                for name in conc.iterkeys():
-##                    print ant
-                    self.Trees[name].agg.add_rule(name='rule '+str(i), ant=ant, concl=conc[name])
-##                    print 'added to', name
-##                    for rule in self.Trees[name].agg.rules:
-##                        print rule
-                    i+=1
-##                print
-        pass
+
+        if not input_:
+            input_ = {}
+        if not out:
+            out = {}
+        if not rules:
+            rules = []
+
+        self.method = method
+        self.tnorm = tnorm
+
+        self.define_input(input_)
+        self.define_output(out)
+        self.define_rules(rules)
+
     def _char(self):
         print "<Fuzzy controller>"
-        for name in self.Trees.itervalues():
+        for name in self.trees.itervalues():
             for i in name:
                 print i
             print
         print 'Rules:'
-        for tree in self.Trees.itervalues():
+        for tree in self.trees.itervalues():
             if isinstance(tree.agg, rules):
                 for rule in tree.agg.rules:
                     print rule
         print
         print '</Fuzzy controller>'
-    def define_input(self, input):
+
+    def define_input(self, input_):
         '''
         Описание
         Синтаксис:
             >>>
         '''
-        self.Inputs={}
-        for name in input.iterkeys():
-            T=Tree(name=name, clas=input[name])
-            self.Inputs[name]=T
-        pass
+        self.inputs = {}
+        for name in input_.iterkeys():
+            self.inputs[name] = Tree(name=name, clas=input_[name])
     def define_output(self, out):
         '''
         Описание
         Синтаксис:
             >>>
         '''
-        self.Trees={}
+        self.trees = {}
         for name in out.iterkeys():
-            T=Tree(name=name, clas=out[name], agg=self.method(), tnorm=self.tnorm)
-            for tree in self.Inputs.itervalues():
-                T.add(tree)
-            self.Trees[name]=T
-        pass
+            tree = Tree(name=name,
+                     clas=out[name],
+                     agg=self.method(),
+                     tnorm=self.tnorm)
+            for branch in self.inputs.itervalues():
+                tree.add(branch)
+            self.trees[name] = tree
     def add_input(self, name, clas):
         '''
         Описание
         Синтаксис:
             >>>
         '''
-        T=Tree(name=name, clas=clas)
-        self.Inputs[name]=T
-        pass
+        self.inputs[name] = Tree(name=name, clas=clas)
+
     def add_output(self, name, clas):
         '''
         Описание
         Синтаксис:
             >>>
         '''
-        T=Tree(name=name, clas=clas, agg=self.method(), tnorm=self.tnorm)
-        for tree in self.Inputs.itervalues():
-            T.add(tree)
-        self.Trees[name]=T
-        pass
+        tree = Tree(name=name, clas=clas, agg=self.method(), tnorm=self.tnorm)
+        for branch in self.inputs.itervalues():
+            tree.add(branch)
+        self.trees[name] = tree
+
     def define_rules(self, rules):
         '''
         Описание
         Синтаксис:
             >>>
         '''
-        if isinstance(self.method(), FuzzyDomain.rules):
-            i=0
+        if isinstance(self.method(), rules):
+            i = 0
 ##            print 'Adding rules...'
             for rule in rules:
-                ant, conc=rule
+                ant, conc = rule
                 for name in conc.iterkeys():
 ##                    print ant
-                    self.Trees[name].agg.add_rule(name='rule '+str(i), ant=ant, concl=conc[name])
+                    self.trees[name].agg.add_rule(name='rule '+str(i),
+                                                    ant=ant,
+                                                    concl=conc[name])
 ##                    print 'added to', name
-##                    for rule in self.Trees[name].agg.rules:
+##                    for rule in self.trees[name].agg.rules:
 ##                        print rule
-                    i+=1
+                    i += 1
 ##                print
-        pass
+
     def add_rule(self, rule, name=''):
         '''
         Описание
         Синтаксис:
             >>>
         '''
+        # TODO
         pass
-    def set(self, x):
+    def set(self, input_values):
         '''
         Описание
         Синтаксис:
             >>>
         '''
-        for name in x.iterkeys():
-            self.Inputs[name].set_estim(x[name])
-        pass
+        for name in input_values.iterkeys():
+            self.inputs[name].set_estim(input_values[name])
+
     def get(self):
         '''
         Описание
         Синтаксис:
             >>>
         '''
-        res={}
-        for tree in self.Trees.itervalues():
-            res[tree.name]=tree.get_estim()
+        res = {}
+        for tree in self.trees.itervalues():
+            res[tree.name] = tree.get_estim()
         return res
-        pass
+
 ##    def plot(self):
-##        n=len(self.Inputs)
-##        m=len(self.Trees)
+##        n=len(self.inputs)
+##        m=len(self.trees)
 ##        a=(n+1)*(m+1)
-##        # вывод классификаторов входов
-##        # вывод классификаторов выходов
-##        # вывод двумерных графиков
+        #TODO вывод классификаторов входов
+        #TODO вывод классификаторов выходов
+        #TODO вывод двумерных графиков
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod(verbose=False)
+    #~ doctest.testmod(verbose=True)

@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name='FuzzyCalc',
+    name='fuzzycalc',
     version='0.1.0',
     author='sejros',
     author_email='sairos@bk.ru',

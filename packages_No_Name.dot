@@ -1,0 +1,25 @@
+digraph "packages_No_Name" {
+charset="utf-8"
+rankdir=BT
+"0" [label="fuzzycalc", shape="box"];
+"1" [label="fuzzycalc.aggregation", shape="box"];
+"2" [label="fuzzycalc.common", shape="box"];
+"3" [label="fuzzycalc.controller", shape="box"];
+"4" [label="fuzzycalc.domain", shape="box"];
+"5" [label="fuzzycalc.numbers", shape="box"];
+"6" [label="fuzzycalc.set", shape="box"];
+"7" [label="fuzzycalc.subset", shape="box"];
+"8" [label="fuzzycalc.tnorm", shape="box"];
+"0" -> "1" [arrowhead="open", arrowtail="none"];
+"1" -> "4" [arrowhead="open", arrowtail="none"];
+"1" -> "7" [arrowhead="open", arrowtail="none"];
+"3" -> "1" [arrowhead="open", arrowtail="none"];
+"3" -> "8" [arrowhead="open", arrowtail="none"];
+"4" -> "2" [arrowhead="open", arrowtail="none"];
+"5" -> "4" [arrowhead="open", arrowtail="none"];
+"5" -> "7" [arrowhead="open", arrowtail="none"];
+"6" -> "7" [arrowhead="open", arrowtail="none"];
+"7" -> "2" [arrowhead="open", arrowtail="none"];
+"7" -> "4" [arrowhead="open", arrowtail="none"];
+"7" -> "8" [arrowhead="open", arrowtail="none"];
+}
