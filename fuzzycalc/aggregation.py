@@ -46,6 +46,7 @@
 
 from .subset import Interval
 from .domain import Domain
+from .tnorm import MinMax
 
 class AggregationMetod(object):
     '''
@@ -127,7 +128,7 @@ class Rules(AggregationMetod):
         self.rules.append(Rule(ant=ant, concl=concl, name=name))
         pass
 
-class Mamdani(rules):
+class Mamdani(Rules):
     '''
     Данный класс реализует функциональность контроллера Мамдани, то есть
     классический алгоритм нечеткого композитного вывода.
@@ -169,7 +170,7 @@ class Mamdani(rules):
             res = res.t_conorm(Z)
         return res
 
-class Rules_accurate(rules):
+class Rules_accurate(Rules):
     '''
     Данный алгоритм нечеткого вывода в общем аналогичен контроллеру Мамдани,
     однако, результат определяется как среднне арифметическое взвешенное по
@@ -273,10 +274,10 @@ class Tree(Domain):
     name=''
     estimation=None
     classifier=None
-    agg=simple
-    tnorm=min_max()
+    agg=Simple()
+    tnorm=MinMax()
 
-    def __init__(self, name='', estim=None, agg=simple(), clas=None, tnorm=min_max()):
+    def __init__(self, name='', estim=None, agg=Simple(), clas=None, tnorm=MinMax()):
         self.name=name
         self.estimation=estim
         self.childs={}

@@ -28,6 +28,12 @@ class Domain(object):
         for i in self:
             print i
 
+    def card(self):
+        '''
+        Cardinality of the domain
+        '''
+        pass
+
 class RationalRange(Domain):
     '''
     Данный класс реализует носитель нечеткого подмножества в виде
@@ -71,27 +77,43 @@ class RationalRange(Domain):
             2.25 0.25
             2.625 0.0
             3.0 0.0
+
+        Attributes:
+            begin
+            end
+            acc
+
     '''
-    begin = 0.0
-    end = 1.0
-    delta = 0.01
-    acc = ACCURACY
+
     def __init__(self, begin=0.0, end=1.0, acc=ACCURACY):
+        super(RationalRange, self).__init__()
         self.begin = float(begin)
         self.end = float(end)
         self.acc = acc
+
     def __iter__(self):
         if self.begin == self.end:
             for i in range(self.acc):
                 yield self.begin
         else:
-            self.delta = (self.end-self.begin)/(self.acc)
+            delta = (self.end-self.begin)/(self.acc)
             i = self.begin
-            while i < self.end+self.delta:
+            while i < self.end+delta:
                 yield i
-                i += self.delta
+                i += delta
 
-class IntegerRange(Domain):
+    def card(self):
+        return len(self)
+
+    def __len__(self):
+        return self.end - self.begin
+    def __contains__(self, item):
+        if item >= self.begin and item <= self.end:
+            return True
+        return False
+
+
+class IntegerRange(RationalRange):
     '''
     Класс, моделирующий носитель нечеткого множества в виде целочисленного
     интервала. По сути, является частным случаем предыдущего класса
@@ -116,18 +138,16 @@ class IntegerRange(Domain):
             2.0 1.0
             3.0 -0.0
 
+        Attributes:
+            begin
+            end
+
     '''
-    begin = 0
-    end = 100
-    def __init__(self, begin=0.0, end=1.0):
+
+    def __init__(self, begin=1, end=100):
+        super(IntegerRange, self).__init__(begin, end, end-begin)
         self.begin = begin
         self.end = end
-    def __iter__(self):
-        i = self.begin
-        while i < self.end+1:
-            yield i
-            i += 1
-
 
 if __name__ == "__main__":
     import doctest

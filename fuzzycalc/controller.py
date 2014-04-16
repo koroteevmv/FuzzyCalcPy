@@ -3,7 +3,7 @@
 '''
 '''
 
-from .aggregation import Simple, Tree, rules
+from .aggregation import Simple, Tree, Rules
 from .tnorm import MinMax
 
 
