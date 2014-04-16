@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+﻿# -*- coding: UTF-8 -*-
 ''' Модуль для работы с нечеткими числами
 
 Модуль реализует функциональность аппарата нечеткой логики в части работы с
@@ -35,11 +35,11 @@ COSS = lambda c: lambda a, b: lambda x: ((1+cos(pi*(x-a)/abs(b-a)))/2) ** \
                         log(0.5, ((1+cos(pi*(c-a)/abs(b-a)))/2))
 POINT = lambda a, b: lambda x: 1
 
-class Trap_ext(Subset):
+class TrapExt(Subset):
     '''
     Нечеткие числа в обобщенно-трапециевидной форме.
     Синтаксис:
-        >>> A = Trap_ext(begin = 1.0,
+        >>> A = TrapExt(begin = 1.0,
                          end = 4.0,
                          begin_tol = 2.0,
                          end_tol = 3.0,
@@ -70,316 +70,360 @@ class Trap_ext(Subset):
             скат в виде гиперболического секанса
     '''
 
-    begin = 0.0
-    begin_tol = 0.0
-    end_tol = 0.0
-    end = 0.0
-    l_skat = LINE(1.0)
-    r_skat = LINE(1.0)
-    left = None
-    right = None
-
     def __init__(self, begin=0.0,
                        begin_tol=0.0,
                        end_tol=0.0,
                        end=0.0,
-                       domain=None,
                        left=LINE(1),
                        right=LINE(1)):
+
         self.begin = float(begin)
         self.begin_tol = float(begin_tol)
         self.end_tol = float(end_tol)
         self.end = float(end)
-        self.Points[begin] = 0.0
-        self.Points[begin_tol] = 1.0
-        self.Points[end_tol] = 1.0
-        self.Points[end] = 0.0
+        self.points = {}
+        self.points[begin] = 0.0
+        self.points[begin_tol] = 1.0
+        self.points[end_tol] = 1.0
+        self.points[end] = 0.0
         self.left = left
         self.right = right
         self.l_skat = left(self.begin_tol, self.begin)
         self.r_skat = right(self.end_tol, self.end)
+        self.domain = RationalRange(begin, end)
+
         if begin == begin_tol:
             self.left = POINT
             self.l_skat = POINT(self.begin_tol, self.begin)
         if end == end_tol:
             self.right = POINT
             self.r_skat = POINT(self.end_tol, self.end)
-        if not domain:
-            self.Domain = RationalRange(begin, end)
+
+    def value(self, key):
+        '''
+        см. fuzzycalc.subset.Subset.value()
+        '''
+        if key <= self.begin:
+            return 0.0
+        elif self.begin < key < self.begin_tol:
+            return self.l_skat(key)
+        elif self.begin_tol <= key <= self.end_tol:
+            return 1.0
+        elif self.end_tol < key <= self.end:
+            return self.r_skat(key)
+        elif self.end < key:
+            return 0.0
         else:
-            self.Domain = domain
-    def value(self, x):
-        if x <= self.begin: return 0.0
-        elif self.begin < x < self.begin_tol: return self.l_skat(x)
-        elif self.begin_tol <= x <= self.end_tol: return 1.0
-        elif self.end_tol < x <= self.end: return self.r_skat(x)
-        elif self.end < x: return 0.0
-        else: return -1
-    def disp(self):
-        for i in self.Domain:
-            pass
+            return -1
+
     def fuzziness(self):
-        t = self.end_tol - self.begin_tol
-        o = self.end - self.begin
-        l = self.level(0.5)
-        u = l.b - l.a
-        return t*(1-abs(2.0*u-o-t)/(0-t))
-        pass
+        tol = self.end_tol - self.begin_tol
+        supp = self.end - self.begin
+        lvl = Subset.level(self, 0.5)
+##        lvl = self.level(0.5)
+        mid = lvl.b - lvl.a
+        return tol*(1-abs(2.0*mid-supp-tol)/(0-tol))
 
     def __add__(self, other):
-        if isinstance(other, float) or isinstance(other  , int):
-            other = Trap_ext(begin=other,
+        if isinstance(other, float) or isinstance(other, int):
+            other = TrapExt(begin=other,
                              end=other,
                              begin_tol=other,
                              end_tol=other)
-        x1 = self.begin
-        x2 = self.begin_tol
-        x3 = self.end_tol
-        x4 = self.end
-        xl = self.left
-        xr = self.right
-        y1 = other.begin
-        y2 = other.begin_tol
-        y3 = other.end_tol
-        y4 = other.end
-        yl = other.left
-        yr = other.right
-        z1 = min(x1+y1, x1+y4, x4+y1, x4+y4)
-        z2 = min(x2+y2, x2+y3, x3+y2, x3+y3)
-        z3 = max(x2+y2, x2+y3, x3+y2, x3+y3)
-        z4 = max(x1+y1, x1+y4, x4+y1, x4+y4)
 
-        zl = lambda x, y: lambda z: xl(x2, x1)(x1+(x2-x1)*(z-z1)/(z2-z1))*yl(y2, y1)(y1+(y2-y1)*(z-z1)/(z2-z1))
-        zr = lambda x, y: lambda z: xr(x3, x4)(x3+(x4-x3)*(z-z3)/(z4-z3))*yr(y3, y4)(y3+(y4-y3)*(z-z3)/(z4-z3))
+        res_begin = min(self.begin + other.begin,
+                        self.begin + other.end,
+                        self.end + other.begin,
+                        self.end + other.end)
+        res_begin_tol = min(self.begin_tol + other.begin_tol,
+                            self.begin_tol + other.end_tol,
+                            self.end_tol + other.begin_tol,
+                            self.end_tol + other.end_tol)
+        res_end_tol = max(self.begin_tol+other.begin_tol,
+                            self.begin_tol+other.end_tol,
+                            self.end_tol+other.begin_tol,
+                            self.end_tol+other.end_tol)
+        res_end = max(self.begin+other.begin,
+                        self.begin+other.end,
+                        self.end+other.begin,
+                        self.end+other.end)
 
-        res = Trap_ext(begin = z1, begin_tol = z2, end_tol = z3, end = z4, left = zl, right = zr)
+        res_left = lambda x, y: lambda z: \
+                        self.left(self.begin_tol, self.begin)\
+                        (self.begin+(self.begin_tol-self.begin)*\
+                        (z-res_begin)/(res_begin_tol-res_begin)) * \
+                        other.left(other.begin_tol, other.begin)\
+                        (other.begin+(other.begin_tol-other.begin)*\
+                        (z-res_begin)/(res_begin_tol-res_begin))
+        res_right = lambda x, y: lambda z: \
+                        self.right(self.end_tol, self.end)\
+                        (self.end_tol+(self.end-self.end_tol)*\
+                        (z-res.end_tol)/(res_end-res_end_tol)) * \
+                        other.right(other.end_tol, other.end)\
+                        (other.end_tol+(other.end-other.end_tol)*\
+                        (z-res_end_tol)/(res_end-res_end_tol))
+
+        res = TrapExt(begin=res_begin, begin_tol=res_begin_tol,
+                        end_tol=res_end_tol, end=res_end,
+                        left=res_left, right=res_right)
         return res
 
     def __sub__(self, other):
-        if isinstance(other, float) or isinstance(other  , int):
-            other = Trap_ext(begin = other, end = other, begin_tol = other, end_tol = other)
-        x1 = self.begin
-        x2 = self.begin_tol
-        x3 = self.end_tol
-        x4 = self.end
-        xl = self.left
-        xr = self.right
+        if isinstance(other, float) or isinstance(other, int):
+            other = TrapExt(begin=other, end=other,
+                                begin_tol=other, end_tol=other)
 
-        y1 = other.begin
-        y2 = other.begin_tol
-        y3 = other.end_tol
-        y4 = other.end
-        yl = other.left
-        yr = other.right
+        res_begin = min(self.begin-other.begin,
+                        self.begin-other.end,
+                        self.end-other.begin,
+                        self.end-other.end)
+        res_begin_tol = min(self.begin_tol-other.begin_tol,
+                            self.begin_tol-other.end_tol,
+                            self.end_tol-other.begin_tol,
+                            self.end_tol-other.end_tol)
+        res_end_tol = max(self.begin_tol-other.begin_tol,
+                            self.begin_tol-other.end_tol,
+                            self.end_tol-other.begin_tol,
+                            self.end_tol-other.end_tol)
+        res_end = max(self.begin-other.begin,
+                        self.begin-other.end,
+                        self.end-other.begin,
+                        self.end-other.end)
 
-        z1 = min(x1-y1, x1-y4, x4-y1, x4-y4)
-        z2 = min(x2-y2, x2-y3, x3-y2, x3-y3)
-        z3 = max(x2-y2, x2-y3, x3-y2, x3-y3)
-        z4 = max(x1-y1, x1-y4, x4-y1, x4-y4)
+        res_left = lambda x, y: lambda z: self.left(self.begin_tol, self.begin)\
+                                    (self.begin+(self.begin_tol-self.begin)*\
+                                    (z-res_begin)/(res_begin_tol-res_begin)) * \
+                                    other.left(other.begin_tol, other.begin)\
+                                    (other.begin+(other.begin_tol-other.begin)*\
+                                    (z-res_begin)/(res_begin_tol-res_begin))
+        res_right = lambda x, y: lambda z: self.right(self.end_tol, self.end)\
+                                    (self.end_tol+(self.end-self.end_tol)*\
+                                    (z-res_end_tol)/(res_end-res_end_tol)) * \
+                                    other.right(other.end_tol, other.end)\
+                                    (other.end_tol+(other.end-other.end_tol)*\
+                                    (z-res_end_tol)/(res_end-res_end_tol))
 
-        zl = lambda x, y: lambda z: xl(x2, x1)(x1+(x2-x1)*(z-z1)/(z2-z1))*yl(y2, y1)(y1+(y2-y1)*(z-z1)/(z2-z1))
-        zr = lambda x, y: lambda z: xr(x3, x4)(x3+(x4-x3)*(z-z3)/(z4-z3))*yr(y3, y4)(y3+(y4-y3)*(z-z3)/(z4-z3))
-
-        res = Trap_ext(begin = z1, begin_tol = z2, end_tol = z3, end = z4, left = zl, right = zr)
+        res = TrapExt(begin=res_begin, begin_tol=res_begin_tol,
+                        end_tol=res_end_tol, end=res_end,
+                        left=res_left, right=res_right)
         return res
 
     def __mul__(self, other):
-        if isinstance(other, float) or isinstance(other  , int):
-            other = Trap_ext(begin = other, end = other, begin_tol = other, end_tol = other)
-        x1 = self.begin
-        x2 = self.begin_tol
-        x3 = self.end_tol
-        x4 = self.end
-        xl = self.left
-        xr = self.right
-        y1 = other.begin
-        y2 = other.begin_tol
-        y3 = other.end_tol
-        y4 = other.end
-        yl = other.left
-        yr = other.right
+        if isinstance(other, float) or isinstance(other, int):
+            other = TrapExt(begin=other, end=other,
+                                begin_tol=other, end_tol=other)
 
-        z1 = min(x1*y1, x1*y4, x4*y1, x4*y4)
-        z2 = min(x2*y2, x2*y3, x3*y2, x3*y3)
-        z3 = max(x2*y2, x2*y3, x3*y2, x3*y3)
-        z4 = max(x1*y1, x1*y4, x4*y1, x4*y4)
+        res_begin = min(self.begin*other.begin,
+                        self.begin*other.end,
+                        self.end*other.begin,
+                        self.end*other.end)
+        res_begin_tol = min(self.begin_tol*other.begin_tol,
+                            self.begin_tol*other.end_tol,
+                            self.end_tol*other.begin_tol,
+                            self.end_tol*other.end_tol)
+        res_end_tol = max(self.begin_tol*other.begin_tol,
+                            self.begin_tol*other.end_tol,
+                            self.end_tol*other.begin_tol,
+                            self.end_tol*other.end_tol)
+        res_end = max(self.begin*other.begin,
+                        self.begin*other.end,
+                        self.end*other.begin,
+                        self.end*other.end)
 
-        zl = lambda x, y: lambda z: xl(x, y)(z)*yl(x, y)(z)
-        zr = lambda x, y: lambda z: xr(x, y)(z)*yr(x, y)(z)
+        res_left = lambda x, y: lambda z: \
+                        self.left(x, y)(z)*other.left(x, y)(z)
+        res_right = lambda x, y: lambda z: \
+                        self.right(x, y)(z)*other.right(x, y)(z)
 
-        res = Trap_ext(begin = z1, begin_tol = z2, end_tol = z3, end = z4, left = zl, right = zr)
+        res = TrapExt(begin=res_begin, begin_tol=res_begin_tol,
+                        end_tol=res_end_tol, end=res_end,
+                        left=res_left, right=res_right)
         return res
 
     def __div__(self, other):
-        if isinstance(other, float) or isinstance(other  , int):
-            other = Trap_ext(begin = other, end = other, begin_tol = other, end_tol = other)
-        x1 = self.begin
-        x2 = self.begin_tol
-        x3 = self.end_tol
-        x4 = self.end
-        xl = self.left
-        xr = self.right
-        y1 = other.begin
-        y2 = other.begin_tol
-        y3 = other.end_tol
-        y4 = other.end
-        yl = other.left
-        yr = other.right
+        if isinstance(other, float) or isinstance(other, int):
+            other = TrapExt(begin=other, end=other,
+                                begin_tol=other, end_tol=other)
 
-        z1 = min(x1/y1, x1/y4, x4/y1, x4/y4)
-        z2 = min(x2/y2, x2/y3, x3/y2, x3/y3)
-        z3 = max(x2/y2, x2/y3, x3/y2, x3/y3)
-        z4 = max(x1/y1, x1/y4, x4/y1, x4/y4)
+        res_begin = min(self.begin/other.begin,
+                        self.begin/other.end,
+                        self.end/other.begin,
+                        self.end/other.end)
+        res_begin_tol = min(self.begin_tol/other.begin_tol,
+                            self.begin_tol/other.end_tol,
+                            self.end_tol/other.begin_tol,
+                            self.end_tol/other.end_tol)
+        res_end_tol = max(self.begin_tol/other.begin_tol,
+                            self.begin_tol/other.end_tol,
+                            self.end_tol/other.begin_tol,
+                            self.end_tol/other.end_tol)
+        res_end = max(self.begin/other.begin,
+                        self.begin/other.end,
+                        self.end/other.begin,
+                        self.end/other.end)
 
-        zl = lambda x, y: lambda z: xl(x, y)(z)*yl(x, y)(z)
-        zr = lambda x, y: lambda z: xr(x, y)(z)*yr(x, y)(z)
+        res_left = lambda x, y: lambda z: \
+                        self.left(x, y)(z)*other.left(x, y)(z)
+        res_right = lambda x, y: lambda z: \
+                        self.right(x, y)(z)*other.right(x, y)(z)
 
-        res = Trap_ext(begin = z1, begin_tol = z2, end_tol = z3, end = z4, left = zl, right = zr)
+        res = TrapExt(begin=res_begin, begin_tol=res_begin_tol,
+                        end_tol=res_end_tol, end=res_end,
+                        left=res_left, right=res_right)
         return res
 
     def __radd__(self, other):
-        if isinstance(other, float) or isinstance(other  , int):
-            other = Trap_ext(begin = other, end = other, begin_tol = other, end_tol = other)
-        x1 = self.begin
-        x2 = self.begin_tol
-        x3 = self.end_tol
-        x4 = self.end
-        xl = self.left
-        xr = self.right
-        y1 = other.begin
-        y2 = other.begin_tol
-        y3 = other.end_tol
-        y4 = other.end
-        yl = other.left
-        yr = other.right
-        z1 = min(x1+y1, x1+y4, x4+y1, x4+y4)
-        z2 = min(x2+y2, x2+y3, x3+y2, x3+y3)
-        z3 = max(x2+y2, x2+y3, x3+y2, x3+y3)
-        z4 = max(x1+y1, x1+y4, x4+y1, x4+y4)
+        if isinstance(other, float) or isinstance(other, int):
+            other = TrapExt(begin=other, end=other,
+                                begin_tol=other, end_tol=other)
 
-##        print z1, z2, z3, z4
+        res_begin = min(self.begin+other.begin,
+                        self.begin+other.end,
+                        self.end+other.begin,
+                        self.end+other.end)
+        res_begin_tol = min(self.begin_tol+other.begin_tol,
+                            self.begin_tol+other.end_tol,
+                            self.end_tol+other.begin_tol,
+                            self.end_tol+other.end_tol)
+        res_end_tol = max(self.begin_tol+other.begin_tol,
+                            self.begin_tol+other.end_tol,
+                            self.end_tol+other.begin_tol,
+                            self.end_tol+other.end_tol)
+        res_end = max(self.begin+other.begin,
+                        self.begin+other.end,
+                        self.end+other.begin,
+                        self.end+other.end)
 
-        zl = lambda x, y: lambda z: xl(x2, x1)(x1+(x2-x1)*(z-z1)/(z2-z1))*yl(y2, y1)(y1+(y2-y1)*(z-z1)/(z2-z1))
-        zr = lambda x, y: lambda z: xr(x3, x4)(x3+(x4-x3)*(z-z3)/(z4-z3))*yr(y3, y4)(y3+(y4-y3)*(z-z3)/(z4-z3))
+        res_left = lambda x, y: lambda z: self.left(self.begin_tol, self.begin)\
+                                    (self.begin+(self.begin_tol-self.begin)*\
+                                    (z-res_begin)/(res_begin_tol-res_begin)) * \
+                                    other.left(other.begin_tol, other.begin)\
+                                    (other.begin+(other.begin_tol-other.begin)*\
+                                    (z-res_begin)/(res_begin_tol-res_begin))
+        res_right = lambda x, y: lambda z: self.right(self.end_tol, self.end)\
+                                    (self.end_tol+(self.end-self.end_tol)*\
+                                    (z-res_end_tol)/(res_end-res_end_tol)) * \
+                                    other.right(other.end_tol, other.end)\
+                                    (other.end_tol+(other.end-other.end_tol)*\
+                                    (z-res_end_tol)/(res_end-res_end_tol))
 
-        res = Trap_ext(begin = z1, begin_tol = z2, end_tol = z3, end = z4, left = zl, right = zr)
+        res = TrapExt(begin=res_begin, begin_tol=res_begin_tol,
+                        end_tol=res_end_tol, end=res_end,
+                        left=res_left, right=res_right)
         return res
 
     def __rsub__(self, other):
-        if isinstance(other, float) or isinstance(other  , int):
-            other = Trap_ext(begin = other, end = other, begin_tol = other, end_tol = other)
-        x1 = self.begin
-        x2 = self.begin_tol
-        x3 = self.end_tol
-        x4 = self.end
-        xl = self.left
-        xr = self.right
+        if isinstance(other, float) or isinstance(other, int):
+            other = TrapExt(begin=other, end=other,
+                                begin_tol=other, end_tol=other)
 
-        y1 = other.begin
-        y2 = other.begin_tol
-        y3 = other.end_tol
-        y4 = other.end
-        yl = other.left
-        yr = other.right
+        res_begin = min(self.begin-other.begin,
+                        self.begin-other.end,
+                        self.end-other.begin,
+                        self.end-other.end)
+        res_begin_tol = min(self.begin_tol-other.begin_tol,
+                            self.begin_tol-other.end_tol,
+                            self.end_tol-other.begin_tol,
+                            self.end_tol-other.end_tol)
+        res_end_tol = max(self.begin_tol-other.begin_tol,
+                            self.begin_tol-other.end_tol,
+                            self.end_tol-other.begin_tol,
+                            self.end_tol-other.end_tol)
+        res_end = max(self.begin-other.begin,
+                        self.begin-other.end,
+                        self.end-other.begin,
+                        self.end-other.end)
 
-        z1 = min(x1-y1, x1-y4, x4-y1, x4-y4)
-        z2 = min(x2-y2, x2-y3, x3-y2, x3-y3)
-        z3 = max(x2-y2, x2-y3, x3-y2, x3-y3)
-        z4 = max(x1-y1, x1-y4, x4-y1, x4-y4)
+        res_left = lambda x, y: lambda z: self.left(self.begin_tol, self.begin)\
+                                    (self.begin+(self.begin_tol-self.begin)*\
+                                    (z-res_begin)/(res_begin_tol-res_begin)) * \
+                                    other.left(other.begin_tol, other.begin)\
+                                    (other.begin+(other.begin_tol-other.begin)*\
+                                    (z-res_begin)/(res_begin_tol-res_begin))
+        res_right = lambda x, y: lambda z: self.right(self.end_tol, self.end)\
+                                    (self.end_tol+(self.end-self.end_tol)*\
+                                    (z-res_end_tol)/(res_end-res_end_tol)) * \
+                                    other.right(other.end_tol, other.end)\
+                                    (other.end_tol+(other.end-other.end_tol)*\
+                                    (z-res_end_tol)/(res_end-res_end_tol))
 
-        zl = lambda x, y: lambda z: xl(x2, x1)(x1+(x2-x1)*(z-z1)/(z2-z1))*yl(y2, y1)(y1+(y2-y1)*(z-z1)/(z2-z1))
-        zr = lambda x, y: lambda z: xr(x3, x4)(x3+(x4-x3)*(z-z3)/(z4-z3))*yr(y3, y4)(y3+(y4-y3)*(z-z3)/(z4-z3))
-
-        res = Trap_ext(begin = z1, begin_tol = z2, end_tol = z3, end = z4, left = zl, right = zr)
+        res = TrapExt(begin=res_begin, begin_tol=res_begin_tol,
+                        end_tol=res_end_tol, end=res_end,
+                        left=res_left, right=res_right)
         return res
 
     def __rmul__(self, other):
-        if isinstance(other, float) or isinstance(other  , int):
-            other = Trap_ext(begin = other, end = other, begin_tol = other, end_tol = other)
-        x1 = self.begin
-        x2 = self.begin_tol
-        x3 = self.end_tol
-        x4 = self.end
-        xl = self.left
-        xr = self.right
-        y1 = other.begin
-        y2 = other.begin_tol
-        y3 = other.end_tol
-        y4 = other.end
-        yl = other.left
-        yr = other.right
+        if isinstance(other, float) or isinstance(other, int):
+            other = TrapExt(begin=other, end=other,
+                                begin_tol=other, end_tol=other)
 
-        z1 = min(x1*y1, x1*y4, x4*y1, x4*y4)
-        z2 = min(x2*y2, x2*y3, x3*y2, x3*y3)
-        z3 = max(x2*y2, x2*y3, x3*y2, x3*y3)
-        z4 = max(x1*y1, x1*y4, x4*y1, x4*y4)
+        res_begin = min(self.begin*other.begin,
+                        self.begin*other.end,
+                        self.end*other.begin,
+                        self.end*other.end)
+        res_begin_tol = min(self.begin_tol*other.begin_tol,
+                            self.begin_tol*other.end_tol,
+                            self.end_tol*other.begin_tol,
+                            self.end_tol*other.end_tol)
+        res_end_tol = max(self.begin_tol*other.begin_tol,
+                            self.begin_tol*other.end_tol,
+                            self.end_tol*other.begin_tol,
+                            self.end_tol*other.end_tol)
+        res_end = max(self.begin*other.begin,
+                        self.begin*other.end,
+                        self.end*other.begin,
+                        self.end*other.end)
 
-        zl = lambda x, y: lambda z: xl(x, y)(z)*yl(x, y)(z)
-        zr = lambda x, y: lambda z: xr(x, y)(z)*yr(x, y)(z)
+        res_left = lambda x, y: lambda z: \
+                        self.left(x, y)(z)*other.left(x, y)(z)
+        res_right = lambda x, y: lambda z: \
+                        self.right(x, y)(z)*other.right(x, y)(z)
 
-        res = Trap_ext(begin = z1, begin_tol = z2, end_tol = z3, end = z4, left = zl, right = zr)
+        res = TrapExt(begin=res_begin, begin_tol=res_begin_tol,
+                        end_tol=res_end_tol, end=res_end,
+                        left=res_left, right=res_right)
         return res
 
     def __rdiv__(self, other):
-        if isinstance(other, float) or isinstance(other  , int):
-            other = Trap_ext(begin = other, end = other, begin_tol = other, end_tol = other)
-        x1 = self.begin
-        x2 = self.begin_tol
-        x3 = self.end_tol
-        x4 = self.end
-        xl = self.left
-        xr = self.right
-        y1 = other.begin
-        y2 = other.begin_tol
-        y3 = other.end_tol
-        y4 = other.end
-        yl = other.left
-        yr = other.right
+        if isinstance(other, float) or isinstance(other, int):
+            other = TrapExt(begin=other, end=other,
+                                begin_tol=other, end_tol=other)
 
-        z1 = min(x1/y1, x1/y4, x4/y1, x4/y4)
-        z2 = min(x2/y2, x2/y3, x3/y2, x3/y3)
-        z3 = max(x2/y2, x2/y3, x3/y2, x3/y3)
-        z4 = max(x1/y1, x1/y4, x4/y1, x4/y4)
+        res_begin = min(self.begin/other.begin,
+                        self.begin/other.end,
+                        self.end/other.begin,
+                        self.end/other.end)
+        res_begin_tol = min(self.begin_tol/other.begin_tol,
+                            self.begin_tol/other.end_tol,
+                            self.end_tol/other.begin_tol,
+                            self.end_tol/other.end_tol)
+        res_end_tol = max(self.begin_tol/other.begin_tol,
+                            self.begin_tol/other.end_tol,
+                            self.end_tol/other.begin_tol,
+                            self.end_tol/other.end_tol)
+        res_end = max(self.begin/other.begin,
+                        self.begin/other.end,
+                        self.end/other.begin,
+                        self.end/other.end)
 
-        zl = lambda x, y: lambda z: xl(x, y)(z)*yl(x, y)(z)
-        zr = lambda x, y: lambda z: xr(x, y)(z)*yr(x, y)(z)
+        res_left = lambda x, y: lambda z: \
+                        self.left(x, y)(z)*other.left(x, y)(z)
+        res_right = lambda x, y: lambda z: \
+                        self.right(x, y)(z)*other.right(x, y)(z)
 
-        res = Trap_ext(begin=z1, begin_tol=z2, end_tol=z3, end=z4, left=zl, right=zr)
+        res = TrapExt(begin=res_begin, begin_tol=res_begin_tol,
+                        end_tol=res_end_tol, end=res_end,
+                        left=res_left, right=res_right)
         return res
 
+class TrFN(TrapExt):
+    '''
+    Трапециевидное нечеткое число
+    '''
 
-##def g(k, f, s):
-##    skat_ = f(k)
-##    skat = skat_(mode, edge)
-##    x = [i+edge for i in range(int(1.5*abs(mode-edge)))]
-##    y = [skat(i) for i in x]
-##    for i in range(len(y)):
-##        if y[i]>1: y[i] = 1.0
-##        elif y[i]<0: y[i] = 0.0
-##    p.plot(x, y)
-##    legend.append(' '+s)
-
-class TrFN(Trap_ext):
     def __init__(self, a, b, c, d):
-        self.begin = float(a)
-        self.begin_tol = float(b)
-        self.end_tol = float(c)
-        self.end = float(d)
-        self.Points[a] = 0.0
-        self.Points[b] = 1.0
-        self.Points[c] = 1.0
-        self.Points[d] = 0.0
-        self.left = LINE(1.0)
-        self.right = LINE(1.0)
-        self.l_skat = LINE(1.0)(self.begin_tol, self.begin)
-        self.r_skat = LINE(1.0)(self.end_tol, self.end)
-        if a == b:
-            self.left = POINT
-            self.l_skat = POINT(self.begin_tol, self.begin)
-        if c == d:
-            self.right = POINT
-            self.r_skat = POINT(self.end_tol, self.end)
-        self.Domain = RationalRange(a, d)
+        TrapExt.__init__(self, a, b, c, d, LINE(1), LINE(1))
+##        super(TrFN, self).__init__(a, b, c, d, LINE(1), LINE(1))
 
 if __name__ == "__main__":
     import doctest

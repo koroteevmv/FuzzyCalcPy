@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+﻿# -*- coding: UTF-8 -*-
 
 '''
 Модуль реализует набор базовых типов, представляющих разные виды нечетких
@@ -47,7 +47,7 @@ class Subset(object):
         self.points[self.domain.begin] = 0.0
         self.points[self.domain.end] = 0.0
 
-    def value(self, x):
+    def value(self, key):
         '''
         Возвращает уровень принадлежности точки нечеткому подмножеству.
         Данный метод непосредственно и является программной имплементацией
@@ -63,19 +63,14 @@ class Subset(object):
         0.60653
         '''
         try:
-            return self.values[x]
+            return self.values[key]
         except KeyError:
             sort = sorted(self.values.keys())
             sort1 = sorted(self.values.keys())
             sort1.pop(0)
             for i, j in zip(sort, sort1):
-                if i < x < j:
-                    x1 = i
-                    x2 = j
-                    y1 = self.value(i)
-                    y2 = self.value(j)
-##                    y = (x-x1)*(y2-y1)/(x2-x1)+y1
-                    return round((y1+y2)/2, 4)
+                if i < key < j:
+                    return round((self.value(i) + self.value(j))/2, 4)
                 else:
                     return 0.0
 
@@ -96,8 +91,8 @@ class Subset(object):
             4.0 -0.0
 
         '''
-        for x in self.domain:
-            print x, self.value(x)
+        for i in self.domain:
+            print i, self.value(i)
 
     def normalize(self):
         '''
@@ -130,9 +125,8 @@ class Subset(object):
     def sup(self):
         sup = 0.0
         for i in self.domain:
-            v = self.value(i)
-            if v > sup:
-                sup = v
+            if self.value(i) > sup:
+                sup = self.value(i)
         return sup
     def plot(self, verbose=True):
         '''
@@ -149,9 +143,8 @@ class Subset(object):
         x = []
         y = []
         for i in self.domain:
-            v = self.value(i)
             x.append(i)
-            y.append(v)
+            y.append(self.value(i))
         p.plot(x, y)
         if isinstance(self.domain, IntegerRange):
         # TODO построение графиков НПМ на целочисленных интервалах.
@@ -164,18 +157,18 @@ class Subset(object):
             for i in self.points.iterkeys():
                 p.text(i, self.points[i], str(i))
 
-    def level(self, a):     # TODO привести к общему формату или удалить
-        x1 = self.domain.begin
-        x2 = self.domain.end
+    def level(self, lvl):     # TODO привести к общему формату или удалить
+        begin = self.domain.begin
+        end = self.domain.end
         for i in self.domain:
-            if self.value(i) >= float(a):
-                x1 = i
+            if self.value(i) >= float(lvl):
+                begin = i
                 break
         for i in self.domain:
-            if (self.value(i) <= a) and (i > x1):
-                x2 = i
+            if (self.value(i) <= lvl) and (i > begin):
+                end = i
                 break
-        res = Interval(x1, x2)
+        res = Interval(begin, end)
         return res
 
     def __getitem__(self, key):
@@ -219,10 +212,8 @@ class Subset(object):
             4.0
         '''
         sum_ = 0.0
-        j = 0
         for i in self.domain:
             sum_ += self.value(i)
-            j += 1
         return sum_*(self.domain.end-self.domain.begin) / self.domain.acc
 
     def mode(self):
@@ -311,61 +302,53 @@ class Subset(object):
 
     def __add__(self, other):
         if isinstance(self, Point) or isinstance(other, Point):
-            raise NotImplemented
+            raise NotImplementedError
         if isinstance(other, float) or isinstance(other, int):
-            raise NotImplemented
+            raise NotImplementedError
         begin = min(self.domain.begin, other.begin)
         end = max(self.domain.end, other.end)
         res = Subset(begin, end)
         for i in res.domain:
-            ii = self.value(i)
-            jj = other.value(i)
-            res.set(i, min(ii+jj, 1))
+            res[i] = min(self.value(i)+other.value(i), 1)
         return res
 
     def __sub__(self, other):
         if isinstance(self, Point) or isinstance(other, Point):
-            raise NotImplemented
+            raise NotImplementedError
         if isinstance(other, float) or isinstance(other, int):
-            raise NotImplemented
+            raise NotImplementedError
         begin = min(self.domain.begin, other.begin)
         end = max(self.domain.end, other.end)
         res = Subset(begin, end)
         for i in res.domain:
-            ii = self.value(i)
-            jj = other.value(i)
-            res.set(i, max(ii-jj, 0))
+            res[i] = max(self.value(i)-other.value(i), 0)
         return res
 
     def __mul__(self, other):
         if isinstance(self, Point) or isinstance(other, Point):
-            raise NotImplemented
+            raise NotImplementedError
         if isinstance(other, float) or isinstance(other, int):
             begin = self.domain.begin
             end = self.domain.end
             res = Subset(begin, end)
             for i in res.domain:
-                ii = self.value(i)
-                res.set(i, min(ii*other, 1))
+                res[i] = min(self.value(i)*other, 1)
             return res
         begin = min(self.domain.begin, other.begin)
         end = max(self.domain.end, other.end)
         res = Subset(begin, end)
         for i in res.domain:
-            ii = self.value(i)
-            jj = other.value(i)
-            res.set(i, ii*jj)
+            res[i] = self.value(i)*other.value(i)
         return res
 
     def __pow__(self, other):
         if not(isinstance(other, float) or isinstance(other, int)):
-            raise NotImplemented
+            raise NotImplementedError
         begin = self.domain.begin
         end = self.domain.end
         res = Subset(begin, end)
         for i in res.domain:
-            ii = self.value(i)
-            res.set(i, min(ii**other, 1))
+            res[i] = min(self.value(i)**other, 1)
         return res
 
     def __invert__(self):
@@ -379,7 +362,7 @@ class Subset(object):
         i = res.domain.begin
         while i <= res.domain.end:
             i = i+(res.domain.end-res.domain.begin)/ACCURACY
-            res.set(i, 1 - self.value(i))
+            res[i] = 1 - self.value(i)
 
     def __and__(self, other):
         begin = min(self.domain.begin, other.domain.begin)
@@ -709,14 +692,15 @@ class Gaussian(Subset):
         >>> A=Gaussian(0.0, 1.0)    # Стандартное распределение
 
     Первый параметр - мода гауссианы, второй - стандартное отклонение (омега)
+    Attributes:
+        mu
+        omega
     '''
-
-    mu = 0.0
-    omega = 0.0
 
     def __init__(self, mu, omega):
         self.mu = float(mu)
         self.omega = float(omega)
+
         self.domain.begin = mu-5*omega
         self.domain.end = mu+5*omega
 
@@ -727,9 +711,8 @@ class Gaussian(Subset):
         x = []
         y = []
         for i in self.domain:
-            v = self.value(i)
             x.append(i)
-            y.append(v)
+            y.append(self.value(i))
         p.plot(x, y)
         p.plot(self.domain.end+(self.domain.end-self.domain.begin)/3, -0.1)
         p.text(self.mu, 1.00, str(self.mu))

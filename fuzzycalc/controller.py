@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+﻿# -*- coding: UTF-8 -*-
 
 '''
 '''
@@ -55,11 +55,6 @@ class Controller(object):
         tnorm
     '''
 
-    trees = {}
-    inputs = {}
-    method = None
-    tnorm = None
-
     def __init__(self, input_=None,
                         out=None,
                         rules=None,
@@ -80,6 +75,8 @@ class Controller(object):
 
         self.method = method
         self.tnorm = tnorm
+        self.trees = {}
+        self.inputs = {}
 
         self.define_input(input_)
         self.define_output(out)
@@ -93,7 +90,7 @@ class Controller(object):
             print
         print 'Rules:'
         for tree in self.trees.itervalues():
-            if isinstance(tree.agg, rules):
+            if isinstance(tree.agg, Rules):
                 for rule in tree.agg.rules:
                     print rule
         print

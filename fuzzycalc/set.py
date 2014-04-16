@@ -1,4 +1,6 @@
-﻿''' Модуль для работы с нечеткими множествами
+﻿# -*- coding: UTF-8 -*-
+
+''' Модуль для работы с нечеткими множествами
 
 Модуль реализует функциональность аппарата нечеткой логики в части работы с
 нечеткими множествами. Он включает:
@@ -16,7 +18,6 @@
 используются в качестве значений лингвистических переменных вместо обычных
 чисел.
 '''
-# -*- coding: UTF-8 -*-
 
 from .subset import Trapezoidal, Gaussian, Triangle, Subset
 import math
@@ -46,14 +47,13 @@ class FuzzySet(object):
          имя классификатора
 
     Поля класса:
-    Sets
-        Ассоциативный массив, содержащий, соответственно, имя и объект типа
-        Subset, для каждого терма нечеткого множества.
+        Sets
+            Ассоциативный массив, содержащий, соответственно, имя и объект типа
+            Subset, для каждого терма нечеткого множества.
+        begin
+        end
+        name
     '''
-    begin = 0.0
-    end = 1.0
-    Sets = {}
-    name = ''
 
     def __init__(self, begin, end, name=''):
         '''
@@ -68,7 +68,7 @@ class FuzzySet(object):
         '''
         self.begin = float(begin)
         self.end = float(end)
-        self.Sets = {}
+        self.sets = {}
         self.name = name
 
     def __iter__(self):
@@ -89,7 +89,7 @@ class FuzzySet(object):
             0.766822222222
 
         '''
-        for i in self.Sets.iterkeys():
+        for i in self.sets.iterkeys():
             yield self[i]
 
     def __getitem__(self, param):
@@ -113,7 +113,7 @@ class FuzzySet(object):
 
 
         '''
-        return self.Sets[param]
+        return self.sets[param]
 
     def add_term(self, sub, name=''):
         '''
@@ -138,7 +138,7 @@ class FuzzySet(object):
             ключ ассоциативного массива Sets
 
         '''
-        self.Sets[name] = sub
+        self.sets[name] = sub
 
     def find(self, x, term):
         '''
@@ -161,7 +161,7 @@ class FuzzySet(object):
             0.5
 
         '''
-        return self.Sets[term].value(x)
+        return self.sets[term].value(x)
 
     def classify(self, ss):
         '''
@@ -191,12 +191,12 @@ class FuzzySet(object):
         # встроить как поле в классификатор?
         res = {}
         if isinstance(ss, Subset):
-            for i in self.Sets.iterkeys():
-                t = ss & self.Sets[i]
+            for i in self.sets.iterkeys():
+                t = ss & self.sets[i]
                 res[i] = t.card()
         else:
-            for i in self.Sets.iterkeys():
-                t = self.Sets[i].value(ss)
+            for i in self.sets.iterkeys():
+                t = self.sets[i].value(ss)
                 res[i] = t
         maxim = 0
         name = None
@@ -215,7 +215,7 @@ class FuzzySet(object):
             >>> C.plot()
         '''
         labels = []
-        for name, sub in self.Sets.iteritems():
+        for name, sub in self.sets.iteritems():
             sub.plot(verbose=False)
             labels.append(name)
         p.legend(labels, loc='upper right')
@@ -297,9 +297,6 @@ class TriangleClassifier(FuzzySet):
          значения в которых не принадлежат ни одному терму.
          При cross = 0 термы вырождаются в точку.
     '''
-    names = []
-    edge = 0
-    cross = 1
 
     def __init__(self, begin=0.0,
                         end=1.0,
@@ -342,7 +339,7 @@ class TriangleClassifier(FuzzySet):
             names = []
         self.begin = float(begin)
         self.end = float(end)
-        self.Sets = {}
+        self.sets = {}
         self.name = name
         if not names:
             return None
@@ -394,7 +391,7 @@ class GaussianClassifier(FuzzySet):
             names = []
         self.begin = float(begin)
         self.end = float(end)
-        self.Sets = {}
+        self.sets = {}
         self.name = name
         if not names:
             return None
@@ -586,7 +583,7 @@ class Classifier(FuzzySet):
 
         self.begin = float(begin)
         self.end = float(end)
-        self.Sets = {}
+        self.sets = {}
         self.name = name
         n = len(p)
         p = sorted(p)

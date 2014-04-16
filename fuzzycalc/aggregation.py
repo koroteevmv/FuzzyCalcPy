@@ -28,17 +28,17 @@
     9.55
     >>> # получаем результат с использованием разных t-норм
     >>> T.tnorm=min_max()
-    >>> T._calculate()  #doctest: +SKIP
+    >>> T.calculate()  #doctest: +SKIP
     <FuzzySubset.Subset instance at 0x0292EF80>
     >>> print T.get_estim()
     9.55
     >>> T.tnorm=sum_prod()
-    >>> T._calculate()  #doctest: +SKIP
+    >>> T.calculate()  #doctest: +SKIP
     <FuzzySubset.Subset instance at 0x02B3A3F0>
     >>> print T.get_estim()
     9.55
     >>> T.tnorm=margin()
-    >>> T._calculate()  #doctest: +SKIP
+    >>> T.calculate()  #doctest: +SKIP
     <FuzzySubset.Subset instance at 0x02B3A788>
     >>> print T.get_estim()
     9.55
@@ -54,7 +54,7 @@ class AggregationMetod(object):
     в интегральный. Подклассы данного класса реализуют алгоритмы интеграции
     различных типов нечетких контроллеров.
     '''
-    def _calculate(self, host):
+    def calculate(self, host):
         pass
 
 class Simple(AggregationMetod):
@@ -62,18 +62,19 @@ class Simple(AggregationMetod):
     Метод агрегации показателей, в котором интегральный показатель расчитывается
     как среднее арифметическое частных.
     '''
-    def _calculate(self, host):
+    def calculate(self, host):
         est = 0.0
-        w = 0.0
+        weight = 0.0
         for child in host.childs.values():
             try:
                 est += float(child.get_estim())
             except TypeError:
                 return None
-            w += 1.0
-        if w == 0.0: return None
+            weight += 1.0
+        if weight == 0.0:
+            return None
         else:
-            host.estimation = est/w
+            host.estimation = est/weight
             return host.estimation
 
 class Rules(AggregationMetod):
@@ -83,9 +84,9 @@ class Rules(AggregationMetod):
     вывода, использующие правила вывода реализуются классами, дочерними от
     данного.
     '''
-    rules = []
     def __init__(self):
         self.rules = []
+
     def add_rule(self, ant={}, concl='', name=''):
         '''
         Данный метод позволяет добавить систему правил, согласно которой будет
@@ -142,10 +143,10 @@ class Mamdani(Rules):
     t-конормы и получившееся НПМ и бдет являться конечным результатом процесса
     нечеткого вывода.
     '''
-    rules = []
     def __init__(self):
         self.rules = []
-    def _calculate(self, host):
+
+    def calculate(self, host):
         from FuzzySubset import Interval
         # Начальное значение итогового НПМ. Для конормы это 0 уровень
         res = Interval(host.classifier.begin,
@@ -170,23 +171,25 @@ class Mamdani(Rules):
             res = res.t_conorm(Z)
         return res
 
-class Rules_accurate(Rules):
+class RulesAccurate(Rules):
     '''
     Данный алгоритм нечеткого вывода в общем аналогичен контроллеру Мамдани,
     однако, результат определяется как среднне арифметическое взвешенное по
     дефаззифицированным термам заключения каждого правила, причем весами
     являются веса соответствующего правила.
     '''
-    rules = []
-    def _calculate(self, host):
+    def calculate(self, host):
         sum_a = 0.0
         summ = 0.0
         # для каждого правила вычисляем его альфу
         for rule in self.rules:
             alpha = 1.0 # Для t-нормы начальным значением будет 1
-            for param, value in rule.ant.iteritems(): # для каждого фактора в правиле
-                fact = host[param].get_estim()   # значение фактора
-                mem = host[param].classifier[value].value(fact)   # его принадлежность в классификаторе
+            # для каждого фактора в правиле
+            for param, value in rule.ant.iteritems():
+                # значение фактора
+                fact = host[param].get_estim()
+                # его принадлежность в классификаторе
+                mem = host[param].classifier[value].value(fact)
                 alpha = host.tnorm.t_norm(alpha, mem)
             rule.alpha = alpha
             sum_a += alpha
@@ -195,25 +198,28 @@ class Rules_accurate(Rules):
             return 0.0
         return summ/sum_a
 
-class Rule:
+class Rule(object):
     '''
     Описание
     Синтаксис:
         >>>
+    Attributes:
+        ant
+        concl
+        name
     '''
-    ant = {}
-    concl = ''
-    name = ''
-    alpha = ''
-    def __init__(self, ant={}, concl='',  name=''):
+    def __init__(self, ant=None, concl='', name=''):
+        if not ant:
+            ant = {}
         self.concl = concl
         self.name = name
         self.ant = ant
+
     def __str__(self):
-        res=str(self.name)+': '
+        res = str(self.name)+': '
         for (name, value) in self.ant.iteritems():
-            res+=str(name)+'='+value+' '
-        res+=' -> '+str(self.concl) + '(' + str(self.alpha)+')'
+            res += str(name)+'='+value+' '
+        res += ' -> '+str(self.concl)
         return res
 
 class Tree(Domain):
@@ -222,7 +228,8 @@ class Tree(Domain):
     структуры (дерева), в которой оценка данного узла зависит определенным
     образом от оценок его потомков.
     Конструктор данного класса создает как само дерево, так и его потомков.
-    Листовой элемент дерева - это тот, для которого не создано ни одного потомка.
+    Листовой элемент дерева - это тот, для которого не создано ни одного
+    потомка.
     Синтаксис:
         >>> A=Tree('tree')
         >>> A.add(Tree('branch 1'))
@@ -245,7 +252,8 @@ class Tree(Domain):
         branch 2 - None (1.0)
         branch 3 - None (1.0)
         tree - None (1.0)
-        >>> A=Tree('name', estim=2.5, weight=0.23, clas=std_3_Classifier(), tnorm=sum_prod)
+        >>> A=Tree('name', estim=2.5, weight=0.23, clas=std_3_Classifier(),
+                    tnorm=sum_prod)
 
     Параметры:
         name
@@ -269,21 +277,17 @@ class Tree(Domain):
         tnorm
     '''
     # TODO отделить МАИ от иерархического носителя
-    # TODO реализовать в интерфейсе Subset иерархический носитель. Без изъебов типа весов и классификаторов. Но с A.value()
-    childs={}
-    name=''
-    estimation=None
-    classifier=None
-    agg=Simple()
-    tnorm=MinMax()
+    # TODO реализовать в интерфейсе Subset иерархический носитель.
+    # Без изъебов типа весов и классификаторов. Но с A.value()
 
-    def __init__(self, name='', estim=None, agg=Simple(), clas=None, tnorm=MinMax()):
-        self.name=name
-        self.estimation=estim
-        self.childs={}
-        self.agg=agg
-        self.classifier=clas
-        self.tnorm=tnorm
+    def __init__(self, name='', estim=None, agg=Simple(),
+                        clas=None, tnorm=MinMax()):
+        self.name = name
+        self.estimation = estim
+        self.childs = {}
+        self.agg = agg
+        self.classifier = clas
+        self.tnorm = tnorm
     def __str__(self):
         '''
         Для быстрого вывода основной информации о дереве, поддереве или листе,
@@ -335,16 +339,16 @@ class Tree(Domain):
             Параметр
                 описание
         '''
-        self.childs[addition.name]=addition
+        self.childs[addition.name] = addition
     def get_estim(self):
-        if self.estimation or self.estimation==0.0:
+        if self.estimation or self.estimation == 0.0:
             return self.estimation
         else:
-            if self.childs==[]:
+            if self.childs == []:
                 return None
-            return self.agg._calculate(self)
-    def set_estim(self, e):
-        self.estimation=e
+            return self.agg.calculate(self)
+    def set_estim(self, val):
+        self.estimation = val
     def __getitem__(self, param):
         '''
         Для быстрого доступа к любому из дочерних узлов дерева (не обязательно
@@ -425,7 +429,7 @@ class Ruled(Tree):
 ##        self.classifier[concl]
         self.rules.append(Rule(ant=ant, concl=concl, name=name))
 
-    def _calculate(self):
+    def calculate(self):
         # Начальное значение итогового НПМ. Для конормы это 0 уровень
         res = Interval(self.classifier.begin,
                        self.classifier.end,
