@@ -20,6 +20,8 @@
 '''
 
 from .subset import Trapezoidal, Gaussian, Triangle, Subset
+from .domain import RationalRange
+
 import math
 import pylab as p
 
@@ -55,7 +57,7 @@ class FuzzySet(object):
         name
     '''
 
-    def __init__(self, begin, end, name=''):
+    def __init__(self, begin=0.0, end=1.0, domain=None, name=''):
         '''
             >>> A  =  FuzzySet(0, 10, 'Sample fuzzy set')
             >>> print A.begin
@@ -66,8 +68,9 @@ class FuzzySet(object):
             Sample fuzzy set
 
         '''
-        self.begin = float(begin)
-        self.end = float(end)
+        if not domain:
+            domain = RationalRange(begin, end)
+        self.domain = domain
         self.sets = {}
         self.name = name
 
@@ -140,7 +143,7 @@ class FuzzySet(object):
         '''
         self.sets[name] = sub
 
-    def find(self, x, term):
+    def find(self, val, term):
         '''
         Возвращает значение принадлежности точки x терму term
         Синтаксис:
@@ -161,9 +164,9 @@ class FuzzySet(object):
             0.5
 
         '''
-        return self.sets[term].value(x)
+        return self.sets[term].value(val)
 
-    def classify(self, ss):
+    def classify(self, val):
         '''
         Возвращает имя терма, наиболее соответствующего переданному элементу.
         Будучи вызванным у квалификатора, соответствует квалификации точного
@@ -190,14 +193,14 @@ class FuzzySet(object):
         # TODO: различные методы классификации:
         # встроить как поле в классификатор?
         res = {}
-        if isinstance(ss, Subset):
+        if isinstance(val, Subset):
             for i in self.sets.iterkeys():
-                t = ss & self.sets[i]
-                res[i] = t.card()
+                j = val & self.sets[i]
+                res[i] = j.card()
         else:
             for i in self.sets.iterkeys():
-                t = self.sets[i].value(ss)
-                res[i] = t
+                j = self.sets[i].value(val)
+                res[i] = j
         maxim = 0
         name = None
         for i in res.iterkeys():
@@ -219,8 +222,8 @@ class FuzzySet(object):
             sub.plot(verbose=False)
             labels.append(name)
         p.legend(labels, loc='upper right')
-        p.plot(self.begin, 1.01)
-        p.plot(self.end+(self.end-self.begin)/5, -0.01)
+        p.plot(self.domain.begin, 1.01)
+        p.plot(self.domain.end+(self.domain.end-self.domain.begin)/5, -0.01)
         p.title(self.name)
         p.grid()
 
@@ -300,6 +303,7 @@ class TriangleClassifier(FuzzySet):
 
     def __init__(self, begin=0.0,
                         end=1.0,
+                        domain=None,
                         name='',
                         names=None,
                         edge=False,
@@ -335,25 +339,23 @@ class TriangleClassifier(FuzzySet):
             1.0
 
         '''
+        if not domain:
+            domain = RationalRange(begin, end)
+        super(TriangleClassifier, self).__init__(domain=domain, name=name)
+
         if not names:
-            names = []
-        self.begin = float(begin)
-        self.end = float(end)
-        self.sets = {}
-        self.name = name
-        if not names:
-            return None
+            raise ValueError
         if not edge:
             wide = (end-begin)*(cross)/(len(names)*2-2)
             step = (end-begin)/(len(names)-1)
-            p = 0
+            mode = 0
         else:
             wide = (end-begin)*(cross)/((len(names)+1)*2)
             step = (end-begin)/(len(names)+1.0)
-            p = (end-begin)/(len(names)+1.0)
+            mode = (end-begin)/(len(names)+1.0)
         for name in names:
-            self.add_term(Triangle(p-wide, p, p+wide), name=name)
-            p = p+step
+            self.add_term(Triangle(mode-wide, mode, mode+wide), name=name)
+            mode = mode+step
 
 class GaussianClassifier(FuzzySet):
     '''
@@ -369,6 +371,7 @@ class GaussianClassifier(FuzzySet):
 
     def __init__(self, begin=0.0,
                         end=1.0,
+                        domain=None,
                         name='',
                         names=None,
                         edge=0,
@@ -387,27 +390,25 @@ class GaussianClassifier(FuzzySet):
             >>> print A['high'].mode()
             1.0
         '''
+        if not domain:
+            domain = RationalRange(begin, end)
+        super(GaussianClassifier, self).__init__(domain=domain, name=name)
+
         if not names:
-            names = []
-        self.begin = float(begin)
-        self.end = float(end)
-        self.sets = {}
-        self.name = name
-        if not names:
-            return None
+            raise ValueError
         if edge == 0:
             wide = (end-begin)*(cross)/(len(names)*2-2)
             step = (end-begin)/(len(names)-1)
-            p = 0
+            mode = 0
         else:
             wide = (end-begin)*(cross)/((len(names)+1)*2)
             step = (end-begin)/(len(names)+1)
-            p = (end-begin)/(len(names)+1)
+            mode = (end-begin)/(len(names)+1)
         for name in names:
-            self.add_term(Gaussian(p, wide), name=name)
-            p = p+step
+            self.add_term(Gaussian(mode, wide), name=name)
+            mode = mode+step
 
-def std_2_Classificator(begin=0.0, end=1.0, name='', gauss=False):
+def std_2_classificator(begin=0.0, end=1.0, name='', gauss=False):
     '''
     Процедура создания равномерного линейного или гауссового классификатора,
     состоящего из двух термов. Термы маркируются латинскими цифрами
@@ -433,7 +434,7 @@ def std_2_Classificator(begin=0.0, end=1.0, name='', gauss=False):
         return TriangleClassifier(begin=begin, end=end, names=['I', 'II'],
                                     name=name, cross=2.0)
 
-def std_3_Classificator(begin=0.0, end=1.0, name='', gauss=False):
+def std_3_classificator(begin=0.0, end=1.0, name='', gauss=False):
     '''
     Процедура создания равномерного линейного или гауссового классификатора,
     состоящего из трех термов. Термы маркируются латинскими цифрами
@@ -461,7 +462,7 @@ def std_3_Classificator(begin=0.0, end=1.0, name='', gauss=False):
                                     names=['I', 'II', 'III'],
                                     name=name, cross=2.0)
 
-def std_5_Classificator(begin=0.0, end=1.0, name='', gauss=False):
+def std_5_classificator(begin=0.0, end=1.0, name='', gauss=False):
     '''
     Процедура создания равномерного линейного или гауссового классификатора,
     состоящего из пяти термов. Термы маркируются латинскими цифрами
@@ -493,7 +494,7 @@ def std_5_Classificator(begin=0.0, end=1.0, name='', gauss=False):
                                     name=name,
                                     cross=2.0)
 
-def std_7_Classificator(begin=0.0, end=1.0, name='', gauss=False):
+def std_7_classificator(begin=0.0, end=1.0, name='', gauss=False):
     '''
     Процедура создания равномерного линейного или гауссового классификатора,
     состоящего из семи термов. Термы маркируются латинскими цифрами
@@ -547,16 +548,17 @@ class Classifier(FuzzySet):
         конец области определения
     p
         массив чисел, представляющих центры интервалов толерантности термов
-    u
+    overlap
         параметр, задающий крутизну скатов ФП термов и ширину интервала
-        толерантности. При u = 0 классификатор становится четким, при
-        u = 1 ФП термов становятся треугольными.
+        толерантности. При overlap = 0 классификатор становится четким, при
+        overlap = 1 ФП термов становятся треугольными.
     '''
-    def __init__(self, begin=0.0, end=1.0, p=None, u=1.0, name=''):
+    def __init__(self, begin=0.0, end=1.0, domain=None,
+                        peaks=None, overlap=1.0, name=''):
         '''
         >>> A  =  Classifier(begin = 10, end = 20,
-                             p = [10, 13, 15, 20],
-                             u = 0.2, name = 'sample classifier')
+                             peaks = [10, 13, 15, 20],
+                             overlap = 0.2, name = 'sample classifier')
         >>> print A.begin
         10.0
         >>> print A.end
@@ -578,27 +580,27 @@ class Classifier(FuzzySet):
         >>> print A['1'].end
         14.139755234
         '''
-        if not p:
-            p = []
+        if not peaks:
+            peaks = []
 
-        self.begin = float(begin)
-        self.end = float(end)
-        self.sets = {}
-        self.name = name
-        n = len(p)
-        p = sorted(p)
-        p.insert(0, begin)
-        p.append(end)
-        u = math.tan(float(u)*math.pi/2)
-        for i in range(n):
-            ly = (p[i+1]-p[i])/(u+2)
-            ry = (p[i+2]-p[i+1])/(u+2)
-            a = p[i+1]-ly*(1+u)
-            b = p[i+1]-ly
-            c = p[i+1]+ry
-            d = p[i+1]+ry*(1+u)
-            Ss = Trapezoidal(begin=a, begin_tol=b, end_tol=c, end=d)
-            self.add_term(Ss, name=str(i))
+        if not domain:
+            domain = RationalRange(begin, end)
+        super(Classifier, self).__init__(domain=domain, name=name)
+
+        peaks = sorted(peaks)
+        peaks.insert(0, begin)
+        peaks.append(end)
+        overlap = math.tan(float(overlap)*math.pi/2)
+        for i in range(len(peaks)):
+            left = (peaks[i+1]-peaks[i])/(overlap+2)
+            right = (peaks[i+2]-peaks[i+1])/(overlap+2)
+            begin = peaks[i+1]-left*(1+overlap)
+            begin_tol = peaks[i+1]-left
+            end_tol = peaks[i+1]+right
+            end = peaks[i+1]+right*(1+overlap)
+            self.add_term(Trapezoidal(begin=begin, begin_tol=begin_tol,
+                                        end_tol=end_tol, end=end),
+                            name=str(i))
 
 if __name__ == "__main__":
     import doctest

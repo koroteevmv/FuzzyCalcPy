@@ -1,4 +1,4 @@
-digraph "packages_No_Name" {
+digraph "packages_fuzzy" {
 charset="utf-8"
 rankdir=BT
 "0" [label="fuzzycalc", shape="box"];

@@ -55,6 +55,9 @@ class AggregationMetod(object):
     различных типов нечетких контроллеров.
     '''
     def calculate(self, host):
+        '''
+        Метод возвращает агрегированное значение
+        '''
         pass
 
 class Simple(AggregationMetod):
@@ -87,7 +90,7 @@ class Rules(AggregationMetod):
     def __init__(self):
         self.rules = []
 
-    def add_rule(self, ant={}, concl='', name=''):
+    def add_rule(self, ant=None, concl='', name=''):
         '''
         Данный метод позволяет добавить систему правил, согласно которой будет
         вычисляться оценка текущего узла дерева (к которому применен метод) в
@@ -126,8 +129,9 @@ class Rules(AggregationMetod):
 ##            host[param].classifier[value]
 ##        # concl должен быть среди термов собственного классификатора
 ##        host.classifier[concl]
+        if not ant:
+            ant = {}
         self.rules.append(Rule(ant=ant, concl=concl, name=name))
-        pass
 
 class Mamdani(Rules):
     '''
@@ -144,10 +148,9 @@ class Mamdani(Rules):
     нечеткого вывода.
     '''
     def __init__(self):
-        self.rules = []
+        super(Mamdani, self).__init__(self)
 
     def calculate(self, host):
-        from FuzzySubset import Interval
         # Начальное значение итогового НПМ. Для конормы это 0 уровень
         res = Interval(host.classifier.begin,
                        host.classifier.end,
@@ -164,11 +167,10 @@ class Mamdani(Rules):
                 alpha = host.tnorm.t_norm(alpha, mem)
             rule.alpha = alpha
             # обрезаем терм собственного классификатора уровнем альфа
-            Z = Interval(host.classifier.begin,
-                         host.classifier.end) * rule.alpha & \
-                         host.classifier[rule.concl]
             # и прибавляем его к существующим, используя конорму
-            res = res.t_conorm(Z)
+            res = res.t_conorm(Interval(host.classifier.begin,
+                                         host.classifier.end) * rule.alpha & \
+                                         host.classifier[rule.concl])
         return res
 
 class RulesAccurate(Rules):
@@ -288,6 +290,7 @@ class Tree(Domain):
         self.agg = agg
         self.classifier = clas
         self.tnorm = tnorm
+
     def __str__(self):
         '''
         Для быстрого вывода основной информации о дереве, поддереве или листе,
@@ -309,6 +312,7 @@ class Tree(Domain):
 
         '''
         return self.name+' - '+ str(self.get_estim())
+
     def __iter__(self):
         '''
         Для быстрого перебора всех дочерних элементов дерева можно использовать
@@ -331,6 +335,7 @@ class Tree(Domain):
             for i in leaf:
                 yield i
         yield self
+
     def add(self, addition):
         '''
         Описание
@@ -340,15 +345,20 @@ class Tree(Domain):
                 описание
         '''
         self.childs[addition.name] = addition
+
     def get_estim(self):
+        '''
+        '''
         if self.estimation or self.estimation == 0.0:
             return self.estimation
         else:
             if self.childs == []:
                 return None
             return self.agg.calculate(self)
+
     def set_estim(self, val):
         self.estimation = val
+
     def __getitem__(self, param):
         '''
         Для быстрого доступа к любому из дочерних узлов дерева (не обязательно
@@ -366,98 +376,198 @@ class Tree(Domain):
 ##        print 'im here!'
         return self.childs[param]
 
-class Ruled(Tree):
-    '''
-    Данный класс используется при построении дерева нечетких оценок, в котором
-    оценка текущего  узла связана с оценками его потомков набором правил
-    нечеткого вывода.
-    Синтаксис:
-        см. FuzzyDomain.Tree
-    '''
-
-    # TODO описание с примерами
-    # XXX графическое отображение всего FES. классификаторы, правила,
-    # четкие значения, результирующее НПМ, вывод.
-
-    rules = []
-
-    def __init__(self):
-        pass
-
-    def add_rule(self, ant=None, concl='', name=''):
-        '''
-        Данный метод позволяет добавить систему правил, согласно которой будет
-        вычисляться оценка текущего узла дерева (к которому применен метод) в
-        зависимости от оценок его потомков.
-        Нечеткое правило состоит из посылки и заключения. Посылка описывает
-        при каких значениях факторов результирующая оценка принимает значение,
-        описанное в заключении. В посылке перечислены имена факторов и имена
-        термов соответствующих им классификаторов; а в заключении - имя терма
-        результирующего параметра.
-        Синтаксис:
-            >>> T=Ruled()
-            >>> T.add_rule(name='rule 1',
-                            ant={'factor': 'value'},
-                            concl='value')  #doctest: +SKIP
-
-        Параметры:
-            ant
-                Посылка нечеткого правила.
-                Ассоциативный массив, в ключах которого задаются имена факторов,
-                а в значениях - соответствующие имена значений лингвистической
-                переменной. Предполагается, что в данном массиве перечислены
-                посылки нечеткого правила, связанные логическим И. Для ввода
-                правил, в посылке которых встречается союз ИЛИ используйте
-                разбиение на несколько правил.
-            concl
-                Заключение нечеткого правила
-                Имя терма классификатора, соответствующее данной посылке.
-            name
-                имя правила, используемое опционально для удобства.
-        '''
-
-        if not ant:
-            ant = {}
-
-##        # проверяем првильность параметров:
-##        for param, value in ant.iteritems():
-##            # param должен быть среди потомков
-##            self[param]
-##            # value должен быть среди термов его классификатора
-##            self[param].classifier[value]
-##        # concl должен быть среди термов собственного классификатора
-##        self.classifier[concl]
-        self.rules.append(Rule(ant=ant, concl=concl, name=name))
-
-    def calculate(self):
-        # Начальное значение итогового НПМ. Для конормы это 0 уровень
-        res = Interval(self.classifier.begin,
-                       self.classifier.end,
-                       tnorm=self.tnorm) * 0.0
-        self._weights() # считаем веса всех правил
-        for rule in self.rules:
-            # обрезаем терм собственного классификатора уровнем альфа
-            subset = Interval(self.classifier.begin,
-                              self.classifier.end)*rule.alpha & \
-                              self.classifier[rule.concl]
-            # и прибавляем его к существующим, используя конорму
-            res = res.t_conorm(subset)
-        return res
-    def _weights(self):
-        # для каждого правила вычисляем его альфу
-        for rule in self.rules:
-            alpha = 1.0 # Для t-нормы начальным значением будет 1
-            # для каждого фактора в правиле
-            for param, value in rule.ant.iteritems():
-                # значение фактора
-                fact = self[param].get_estim()
-                # его принадлежность в классификаторе
-                mem = self[param].classifier[value].value(fact)
-                alpha = self.tnorm.t_norm(alpha, mem)
-            rule.alpha = alpha
 
 # XXX интерфейс FES с модельными параметрами и возможностью задания
 # пользовательских и изменения на лету.
+
+from .aggregation import Simple, Tree, Rules
+from .tnorm import MinMax
+
+
+class Controller(object):
+    '''
+    Данный класс представляет интерфейс для создания нечеткого контроллера со
+    множественными входами и выходами. Входом нечеткого контроллера называется
+    лингвистическая переменная, имеющая имя и множество терм-значений
+    (классификатор), которой присваивается четкое, нечеткое или лингвистическое
+    значение. Выходом контроллера называется лингвистическая переменная,
+    имеющая имя и множество терм-значений, значение которой рассчитывается,
+    исходя из значений входных переменных по определенному алгоритму, который
+    называется тип контроллера (см. FuzzyDomain.AggregationMethod).
+
+    Синтаксис:
+        >>>
+    Параметры конструктора:
+        input_
+            C помощью этого параметра задаются входные переменные контроллера.
+            В этот параметр следует передать ассоциативный массив, ключами
+            которого являются строки-имена входных переменных, а значениями -
+            соответствующие классификаторы, задающие терм-множество каждой
+            переменной.
+        out
+            Подобным же образом задаются и выходные переменные классификатора.
+        rules
+            В данный параметр передаются нечеткие правила вывода (если они
+            требуются). Следует передать массив, в котором каждый элемент это
+            правило, представленное в виде пары (tuple) посылки и заключения,
+            каждая из которых представлена в виде ассоциативного массива с
+            ключами - именами переменны и значениями - именами термов.
+        method
+            Данный параметр определяет тип контроллера. Фактически он задает
+            метод (алгоритм) сводки частных показателей в интегральный. Может
+            принимать в качестве значения имя любого подкласса
+            FuzzyDomain.AggregationMethod.
+        tnorm
+            Определяет пару треугольных норм и конорм
+    Поля класса:
+        trees
+            Ассоциативный массив, ключами которого являются имена выходных
+            переменных контроллера, а значениями - соответствующие им деревья
+            (см. FuzzyDomain.Tree)
+        inputs
+            Ассоциативный массив, ключами которого являются имена входных
+            переменных контроллера, а значениями - соответствующие им множества
+            терм-значений (классификаторы). См. FuzzySet.FuzzySet
+        method
+        tnorm
+    '''
+
+    def __init__(self, input_=None,
+                        out=None,
+                        method=Simple(),
+                        tnorm=MinMax()):
+        '''
+        Описание
+        Синтаксис:
+            >>>
+        '''
+
+        if not input_:
+            input_ = {}
+        if not out:
+            out = {}
+
+        self.method = method
+        self.tnorm = tnorm
+        self.trees = {}
+        self.inputs = {}
+
+        self.define_input(input_)
+        self.define_output(out)
+
+    def _char(self):
+        '''
+        Функция выводит данные о нечетком контроллере в человеко-читаемом виде.
+        '''
+        print "<Fuzzy controller>"
+        for name in self.trees.itervalues():
+            for i in name:
+                print i
+            print
+        print 'Rules:'
+        for tree in self.trees.itervalues():
+            if isinstance(tree.agg, Rules):
+                for rule in tree.agg.rules:
+                    print rule
+        print
+        print '</Fuzzy controller>'
+
+    def define_input(self, input_):
+        '''
+        Описание
+        Синтаксис:
+            >>>
+        '''
+        self.inputs = {}
+        for name in input_.iterkeys():
+            self.inputs[name] = Tree(name=name, clas=input_[name])
+        return self
+
+    def define_output(self, out):
+        '''
+        Описание
+        Синтаксис:
+            >>>
+        '''
+        self.trees = {}
+        for name in out.iterkeys():
+            tree = Tree(name=name,
+                     clas=out[name],
+                     agg=self.method(),
+                     tnorm=self.tnorm)
+            for branch in self.inputs.itervalues():
+                tree.add(branch)
+            self.trees[name] = tree
+        return self
+
+    def add_input(self, name, clas):
+        '''
+        Описание
+        Синтаксис:
+            >>>
+        '''
+        self.inputs[name] = Tree(name=name, clas=clas)
+
+    def add_output(self, name, clas):
+        '''
+        Описание
+        Синтаксис:
+            >>>
+        '''
+        tree = Tree(name=name, clas=clas, agg=self.method(), tnorm=self.tnorm)
+        for branch in self.inputs.itervalues():
+            tree.add(branch)
+        self.trees[name] = tree
+
+    def define_rules(self, rules):
+        '''
+        Описание
+        Синтаксис:
+            >>>
+        '''
+        if isinstance(self.method(), rules):
+            i = 0
+            for rule in rules:
+                ant, conc = rule
+                for name in conc.iterkeys():
+                    self.trees[name].agg.add_rule(name='rule '+str(i),
+                                                    ant=ant,
+                                                    concl=conc[name])
+                    i += 1
+            return self
+
+    def add_rule(self, rule, name=''):
+        '''
+        Описание
+        Синтаксис:
+            >>>
+        '''
+        # TODO
+        pass
+
+    def set(self, input_values):
+        '''
+        Описание
+        Синтаксис:
+            >>>
+        '''
+        for name in input_values.iterkeys():
+            self.inputs[name].set_estim(input_values[name])
+
+    def get(self):
+        '''
+        Описание
+        Синтаксис:
+            >>>
+        '''
+        res = {}
+        for tree in self.trees.itervalues():
+            res[tree.name] = tree.get_estim()
+        return res
+
+        #TODO вывод классификаторов входов
+        #TODO вывод классификаторов выходов
+        #TODO вывод двумерных графиков
 
 if __name__ == "__main__":
     import doctest

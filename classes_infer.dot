@@ -1,0 +1,18 @@
+digraph "classes_infer" {
+charset="utf-8"
+rankdir=BT
+"0" [label="{AggregationMetod|\l|calculate()\l}", shape="record"];
+"1" [label="{Controller|inputs : dict\ltnorm\lmethod\ltrees : dict\l|add_input()\lset()\ldefine_output()\lget()\ldefine_input()\l_char()\ladd_rule()\ladd_output()\ldefine_rules()\l__init__()\l}", shape="record"];
+"2" [label="{Mamdani|\l|calculate()\l__init__()\l}", shape="record"];
+"3" [label="{Rule|ant : NoneType, dict\lconcl : str\lname : str\l|__str__()\l__init__()\l}", shape="record"];
+"4" [label="{Rules|rules : list\l|add_rule()\l__init__()\l}", shape="record"];
+"5" [label="{RulesAccurate|\l|calculate()\l}", shape="record"];
+"6" [label="{Simple|\l|calculate()\l}", shape="record"];
+"7" [label="{Tree|childs : dict\lname : str\lagg\ltnorm\lestimation : NoneType\lclassifier : NoneType\l|__getitem__()\l__str__()\l__iter__()\ladd()\lset_estim()\lget_estim()\l__init__()\l}", shape="record"];
+"2" -> "4" [arrowhead="empty", arrowtail="none"];
+"4" -> "0" [arrowhead="empty", arrowtail="none"];
+"5" -> "4" [arrowhead="empty", arrowtail="none"];
+"6" -> "0" [arrowhead="empty", arrowtail="none"];
+"6" -> "1" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="method", style="solid"];
+"6" -> "7" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="agg", style="solid"];
+}

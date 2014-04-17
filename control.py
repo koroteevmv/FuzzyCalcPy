@@ -1,6 +1,7 @@
 ﻿# -*- coding: UTF-8 -*-
 
 '''
+Модуль, реализующий высокоуровневый интерфейс для создания нечетких контроллеров
 '''
 
 from .aggregation import Simple, Tree, Rules
@@ -57,7 +58,6 @@ class Controller(object):
 
     def __init__(self, input_=None,
                         out=None,
-                        rules=None,
                         method=Simple(),
                         tnorm=MinMax()):
         '''
@@ -70,8 +70,6 @@ class Controller(object):
             input_ = {}
         if not out:
             out = {}
-        if not rules:
-            rules = []
 
         self.method = method
         self.tnorm = tnorm
@@ -80,9 +78,11 @@ class Controller(object):
 
         self.define_input(input_)
         self.define_output(out)
-        self.define_rules(rules)
 
     def _char(self):
+        '''
+        Функция выводит данные о нечетком контроллере в человеко-читаемом виде.
+        '''
         print "<Fuzzy controller>"
         for name in self.trees.itervalues():
             for i in name:
@@ -105,6 +105,8 @@ class Controller(object):
         self.inputs = {}
         for name in input_.iterkeys():
             self.inputs[name] = Tree(name=name, clas=input_[name])
+        return self
+
     def define_output(self, out):
         '''
         Описание
@@ -120,6 +122,8 @@ class Controller(object):
             for branch in self.inputs.itervalues():
                 tree.add(branch)
             self.trees[name] = tree
+        return self
+
     def add_input(self, name, clas):
         '''
         Описание
@@ -147,19 +151,14 @@ class Controller(object):
         '''
         if isinstance(self.method(), rules):
             i = 0
-##            print 'Adding rules...'
             for rule in rules:
                 ant, conc = rule
                 for name in conc.iterkeys():
-##                    print ant
                     self.trees[name].agg.add_rule(name='rule '+str(i),
                                                     ant=ant,
                                                     concl=conc[name])
-##                    print 'added to', name
-##                    for rule in self.trees[name].agg.rules:
-##                        print rule
                     i += 1
-##                print
+            return self
 
     def add_rule(self, rule, name=''):
         '''
@@ -169,6 +168,7 @@ class Controller(object):
         '''
         # TODO
         pass
+
     def set(self, input_values):
         '''
         Описание
@@ -189,10 +189,6 @@ class Controller(object):
             res[tree.name] = tree.get_estim()
         return res
 
-##    def plot(self):
-##        n=len(self.inputs)
-##        m=len(self.trees)
-##        a=(n+1)*(m+1)
         #TODO вывод классификаторов входов
         #TODO вывод классификаторов выходов
         #TODO вывод двумерных графиков
