@@ -1,4 +1,4 @@
-﻿# -*- coding: UTF-8 -*-
+# -*- coding: UTF-8 -*-
 
 '''
 Модуль реализует набор простых и параметрических треугольный норм и конорм.
@@ -6,65 +6,41 @@
 
 import math
 
+
 class Tnorm(object):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def norm(self, i, j):
-        '''
-        Описание
-        Синтаксис:
-            >>>
-        '''
-        pass
-    def conorm(self, i, j):
-        '''
-        Описание
-        Синтаксис:
-            >>>
-        '''
         pass
 
+    def conorm(self, i, j):
+        pass
+
+
 class MinMax(Tnorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def norm(self, i, j):
         return min(i, j)
+
     def conorm(self, i, j):
         return max(i, j)
 
+
 class SumProd(Tnorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def norm(self, i, j):
         return i*j
+
     def conorm(self, i, j):
         return i+j-i*j
 
+
+
 class Margin(Tnorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def norm(self, i, j):
         return max(i+j-1, 0)
+
     def conorm(self, i, j):
         return min(i+j, 1)
+
+
 class Drastic(Tnorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def norm(self, i, j):
         if i == 1:
             return j
@@ -72,6 +48,7 @@ class Drastic(Tnorm):
             return i
         else:
             return 0
+
     def conorm(self, i, j):
         if i == 0:
             return j
@@ -80,21 +57,13 @@ class Drastic(Tnorm):
         else:
             return 1
 
+
 class ParametricNorm(Tnorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def __init__(self, param):
         self.param = param
 
+
 class Tnorm1(ParametricNorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def __init__(self, param):
         super(Tnorm1, self).__init__(param)
     def norm(self, i, j):
@@ -102,12 +71,8 @@ class Tnorm1(ParametricNorm):
     def conorm(self, i, j):
         return (i+j-(2-self.param)*i*j)/(1-(1-self.param)*i*j)
 
+
 class Tnorm2(ParametricNorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def __init__(self, param):
         super(Tnorm2, self).__init__(param)
     def norm(self, i, j):
@@ -115,17 +80,13 @@ class Tnorm2(ParametricNorm):
     def conorm(self, i, j):
         return (i+j-i*j-min(i, j, 1-self.param)) / max(1-i, 1-j, self.param)
 
+
 class Tnorm3(ParametricNorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def __init__(self, param):
         super(Tnorm3, self).__init__(param)
     def norm(self, i, j):
         try:
-            return 1/(1+ ((1/i - 1)**self.param + \
+            return 1/(1+ ((1/i - 1)**self.param +
                     (1/j - 1)**self.param)**(1/self.param))
         except ZeroDivisionError:
             return 0.0
@@ -133,12 +94,8 @@ class Tnorm3(ParametricNorm):
         return 1/(1+ ((1/i - 1)**-self.param + \
                     (1/i - 1)**-self.param)**(1/self.param))
 
+
 class Tnorm4(ParametricNorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def __init__(self, param):
         super(Tnorm4, self).__init__(param)
     def norm(self, i, j):
@@ -148,12 +105,8 @@ class Tnorm4(ParametricNorm):
         return (i**self.param + j**self.param - i**self.param*j ** \
                         self.param)**(1/self.param)
 
+
 class Tnorm5(ParametricNorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def __init__(self, param):
         super(Tnorm5, self).__init__(param)
     def norm(self, i, j):
@@ -162,12 +115,8 @@ class Tnorm5(ParametricNorm):
     def conorm(self, i, j):
         return min((i**self.param + j**self.param), 1)
 
+
 class Tnorm6(ParametricNorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def __init__(self, param):
         super(Tnorm6, self).__init__(param)
     def norm(self, i, j):
@@ -180,12 +129,8 @@ class Tnorm6(ParametricNorm):
         return 1 - math.log((1+ (self.param**(1-i) + self.param**(1-j)) / \
                    (self.param-1)), self.param)
 
+
 class Tnorm7(ParametricNorm):
-    '''
-    Описание
-    Синтаксис:
-        >>>
-    '''
     def __init__(self, param):
         super(Tnorm7, self).__init__(param)
     def norm(self, i, j):

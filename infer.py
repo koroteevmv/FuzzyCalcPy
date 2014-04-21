@@ -47,6 +47,7 @@
 from .subset import Interval
 from .domain import Domain
 from .tnorm import MinMax
+from .aggregation import Simple, Tree, Rules
 
 class AggregationMetod(object):
     '''
@@ -348,6 +349,11 @@ class Tree(Domain):
 
     def get_estim(self):
         '''
+        Описание
+        Синтаксис:
+        Параметры:
+            Параметр
+                описание
         '''
         if self.estimation or self.estimation == 0.0:
             return self.estimation
@@ -357,6 +363,13 @@ class Tree(Domain):
             return self.agg.calculate(self)
 
     def set_estim(self, val):
+        '''
+        Описание
+        Синтаксис:
+        Параметры:
+            Параметр
+                описание
+        '''
         self.estimation = val
 
     def __getitem__(self, param):

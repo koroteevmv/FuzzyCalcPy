@@ -1,10 +1,11 @@
-﻿# -*- coding: UTF-8 -*-
+# -*- coding: UTF-8 -*-
 '''
 Модуль, описывающий различные типы носителей нечетких множеств, а также
 реализующий функциональность нечетких правил логического вывода.
 '''
 
 from .common import ACCURACY
+
 
 class Domain(object):
     '''
@@ -23,7 +24,6 @@ class Domain(object):
 
     def char(self):
         '''
-        Синтаксис:
         '''
         for i in self:
             print i
@@ -33,6 +33,7 @@ class Domain(object):
         Cardinality of the domain
         '''
         pass
+
 
 class RationalRange(Domain):
     '''
@@ -96,9 +97,9 @@ class RationalRange(Domain):
             for i in range(self.acc):
                 yield self.begin
         else:
-            delta = (self.end-self.begin)/(self.acc)
+            delta = (self.end - self.begin) / (self.acc)
             i = self.begin
-            while i < self.end+delta:
+            while i <= self.end:
                 yield i
                 i += delta
 
@@ -107,6 +108,7 @@ class RationalRange(Domain):
 
     def __len__(self):
         return self.end - self.begin
+
     def __contains__(self, item):
         if item >= self.begin and item <= self.end:
             return True
@@ -145,9 +147,17 @@ class IntegerRange(RationalRange):
     '''
 
     def __init__(self, begin=1, end=100):
-        super(IntegerRange, self).__init__(begin, end, end-begin)
+        begin = int(begin)
+        end = int(end)
+        acc = end - begin or 1
+        super(IntegerRange, self).__init__(begin, end, acc)
         self.begin = begin
         self.end = end
+
+    def __contains__(self, item):
+        if int(item) == item and self.begin <= item <= self.end:
+            return True
+        return False
 
 if __name__ == "__main__":
     import doctest

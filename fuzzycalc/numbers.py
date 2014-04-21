@@ -7,7 +7,6 @@
 '''
 
 from .subset import Subset
-from .domain import RationalRange
 from math import tanh, log, pi, cos, exp, cosh
 
 LINE = lambda c: lambda a, b: lambda x: abs((x-b)/(a-b))**c
@@ -76,7 +75,8 @@ class TrapExt(Subset):
 
         (begin, begin_tol, end_tol, end) = points
 
-        self.points = {}
+        super(TrapExt, self).__init__(begin, end)
+
         self.points["begin"] = begin
         self.points["begin_tol"] = begin_tol
         self.points["end_tol"] = end_tol
@@ -85,7 +85,6 @@ class TrapExt(Subset):
         self.right = right
         self.l_skat = left(self.points["begin_tol"], self.points["begin"])
         self.r_skat = right(self.points["end_tol"], self.points["end"])
-        self.domain = RationalRange(begin, end)
 
         if begin == begin_tol:
             self.left = POINT
@@ -95,9 +94,6 @@ class TrapExt(Subset):
             self.r_skat = POINT(self.points["end_tol"], self.points["end"])
 
     def value(self, key):
-        '''
-        см. fuzzycalc.subset.Subset.value()
-        '''
         if key <= self.points["begin"]:
             return 0.0
         elif self.points["begin"] < key < self.points["begin_tol"]:
@@ -118,7 +114,7 @@ class TrapExt(Subset):
         tol = self.points["end_tol"] - self.points["begin_tol"]
         supp = self.points["end"] - self.points["begin"]
         lvl = Subset.level(self, 0.5)
-        mid = lvl.b - lvl.a
+        mid = lvl.domain.end - lvl.domain.begin
         return tol*(1-abs(2.0*mid-supp-tol)/(0-tol))
 
     def __add__(self, other):

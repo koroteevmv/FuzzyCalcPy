@@ -172,7 +172,7 @@ class FuzzySet(object):
         Будучи вызванным у квалификатора, соответствует квалификации точного
         значения или значения, выраженного нечетким подмножеством или числом.
         Синтаксис:
-            >>> C = std_5_Classificator()
+            >>> C = std_5_classificator()
             >>> C.classify(0.2)
             'II'
             >>> C.classify(0.8)
@@ -190,8 +190,6 @@ class FuzzySet(object):
             >>> C.classify(Triangle(-1.4, 0.0, 0.6))
             'I'
         '''
-        # TODO: различные методы классификации:
-        # встроить как поле в классификатор?
         res = {}
         if isinstance(val, Subset):
             for i in self.sets.iterkeys():

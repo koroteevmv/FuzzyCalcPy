@@ -10,7 +10,6 @@
 контроллеры - метод анализа иерархий
 '''
 
-import fuzzycalc.common
 import fuzzycalc.domain
 import fuzzycalc.numbers
 import fuzzycalc.set

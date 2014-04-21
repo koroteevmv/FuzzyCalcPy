@@ -35,10 +35,7 @@ class Subset(object):
                         end=1.0,
                         domain=None):
 
-        if not domain:
-            domain = RationalRange(begin, end)
-
-        self.domain = domain
+        self.domain = domain or RationalRange(begin, end)
         self.values = {}
         self.points = {}
 
@@ -68,11 +65,10 @@ class Subset(object):
             sort = sorted(self.values.keys())
             sort1 = sorted(self.values.keys())
             sort1.pop(0)
-            for i, j in zip(sort, sort1):
+            for (i, j) in zip(sort, sort1):
                 if i < key < j:
-                    return round((self.value(i) + self.value(j))/2, 4)
-                else:
-                    return 0.0
+                    return (key-i)*(self[j]-self[i]) / (j-i) + self[i]
+                    break;
 
     def char(self):
         '''
@@ -128,6 +124,7 @@ class Subset(object):
             if self.value(i) > sup:
                 sup = self.value(i)
         return sup
+
     def plot(self, verbose=True):
         '''
         Отображает нечеткое множество графически. Только для нечетких множеств,
@@ -140,12 +137,12 @@ class Subset(object):
             >>> A.plot(verbose=False)
 
         '''
-        x = []
-        y = []
+        xxx = []
+        yyy = []
         for i in self.domain:
-            x.append(i)
-            y.append(self.value(i))
-        p.plot(x, y)
+            xxx.append(i)
+            yyy.append(self.value(i))
+        p.plot(xxx, yyy)
         if isinstance(self.domain, IntegerRange):
         # TODO построение графиков НПМ на целочисленных интервалах.
             pass
@@ -157,7 +154,7 @@ class Subset(object):
             for i in self.points.iterkeys():
                 p.text(i, self.points[i], str(i))
 
-    def level(self, lvl):     # TODO привести к общему формату или удалить
+    def level(self, lvl):
         begin = self.domain.begin
         end = self.domain.end
         for i in self.domain:
@@ -236,7 +233,7 @@ class Subset(object):
                 res = i
         return res
 
-    def euclid_distance(self, other): # XXX расстояние Евклида
+    def euclid_distance(self, other):
         begin = min(self.domain.begin, other.begin)
         end = max(self.domain.end, other.end)
         i = begin
@@ -249,7 +246,7 @@ class Subset(object):
             k += 1.0
         return math.sqrt(summ/k)
 
-    def hamming_distance(self, other): # XXX расстояние Хэмминга
+    def hamming_distance(self, other):
         begin = min(self.domain.begin, other.begin)
         end = max(self.domain.end, other.end)
         i = begin
@@ -261,44 +258,6 @@ class Subset(object):
             i += delta
             k += 1.0
         return summ/k
-
-##    def con(self):
-##        '''
-##        Возвращает НПМ, подвергнутое операции концентрации - возведения в
-##        квадрат.
-##        Синтаксис:
-##            >>> T=Triangle(-1.4, 0.0, 2.6)
-##            >>> B=T.con()
-##            >>> print round(T.value(-1.0), 2)
-##            0.29
-##            >>> print round(B.value(-1.0), 2)
-##            0.08
-##            >>> print round(T.centr(), 2)
-##            0.4
-##            >>> print round(B.centr(), 2)
-##            0.42
-##
-##        '''
-##        return self**2
-##
-##    def dil(self):
-##        '''
-##        Возвращает НПМ, подвергнутое операции размытия -
-##        извлечение квадратного
-##        корня (возведение в степень 0,5)
-##        Синтаксис:
-##            >>> T=Triangle(-1.4, 0.0, 2.6)
-##            >>> B=T.dil()
-##            >>> print round(T.centr(), 2)
-##            0.4
-##            >>> print round(B.centr(), 2)
-##            0.48
-##            >>> print round(T.mode(), 2)
-##            0.0
-##            >>> print round(B.mode(), 2)
-##            0.0
-##        '''
-##        return self**0.5
 
     def __add__(self, other):
         if isinstance(self, Point) or isinstance(other, Point):
@@ -392,15 +351,6 @@ class Subset(object):
 
     # TODO протестировать следующие три функции
     def __cmp__(self, other):
-        '''
-        Описание
-        Синтаксис:
-        Параметры:
-            Параметр
-                описание
-        '''
-##        if self == other:
-##            return 0.0
         sum_ = 0.0
         sum2 = 0.0
         card = (self.card()*other.card())
@@ -459,7 +409,12 @@ class Trapezoidal(Subset):
             end
     '''
 
-    def __init__(self, begin, begin_tol, end_tol, end, domain=None):
+    def __init__(self, points, domain=None):
+
+        (begin, begin_tol, end_tol, end) = points
+
+        super(Trapezoidal, self).__init__(begin, end)
+
         self.domain.begin = float(begin)
         self.begin_tol = float(begin_tol)
         self.end_tol = float(end_tol)
@@ -469,10 +424,6 @@ class Trapezoidal(Subset):
         self.points[begin_tol] = 1.0
         self.points[end_tol] = 1.0
         self.points[end] = 0.0
-        if not domain:
-            self.domain = RationalRange(begin, end)
-        else:
-            self.domain = domain
 
     def value(self, x):
         if x <= self.domain.begin:
@@ -514,62 +465,6 @@ class Trapezoidal(Subset):
             return Subset.__eq__(self, other)
 
 
-class Piecewise(Subset):
-    '''
-    Класс реализует нечеткое подмножество с функцией принадлежности в виде
-    кусочно-линейной функции, задаваемой ассоциативным массивом.
-
-    Синтаксис:
-    >>> p={0.2:1.0, 0.5:0.5}
-    >>> A=Piecewise(points=p, begin=0.0, end=1.0)
-    >>> A.begin
-    0.0
-    >>> A.end
-    1.0
-    >>> A.Points[A.begin]
-    0.0
-    >>> A.value(0.1)
-    0.5
-
-    Параметры конструктора (см. Subset):
-
-    points
-          Ассоциативный массив, ключами которого являются элементы области
-          определения нечеткого множества, а значениями - соответствующие
-          значения уровня принадлежности.
-          Данная таблица значений задает узловые точки кусочно-линейной
-          функции.
-          В таблицу автоматически заносятся точки начала и конца
-          интервала определения со значениями принадлежности 0.0, так что
-          следите за тем, чтобы таблица значений не выходила за пределы
-          области определения
-    '''
-    def __init__(self, points=None, begin=0.0, end=1.0):
-        if not points:
-            points = {}
-        self.points = points
-        self.domain.begin = begin
-        self.domain.end = end
-        self.domain = RationalRange(begin=begin, end=end)
-        if not self.domain.begin in self.points:
-            self.points[self.domain.begin] = 0.0
-        if not self.domain.end in self.points:
-            self.points[self.domain.end] = 0.0
-
-    def value(self, x):
-        p_ = sorted(self.points.keys())
-        p_i = p_[0]
-        if x <= self.domain.begin:
-            return 0.0
-        elif x > self.domain.end:
-            return 0.0
-        for i in sorted(p_):
-            v = self.points[i]
-            p_v = self.points[p_i]
-            if p_i < x <= i:
-                return p_v + (x-p_i)*(v-p_v)/(i-p_i)
-            p_i = i
-
 class Triangle(Trapezoidal):
     '''
     Нечеткое множество с функцией принадлежности в виде треугольника.
@@ -592,15 +487,12 @@ class Triangle(Trapezoidal):
     '''
 
     def __init__(self, a, b, c, domain=None):
-        self.domain.begin = a
-        self.domain.end = c
+
+        super(Triangle, self).__init__(a, c)
+
         self.begin_tol = b
         self.end_tol = b
         self.points[self.begin_tol] = 1.0
-        if not domain:
-            self.domain = RationalRange(begin=a, end=c)
-        else:
-            self.domain = domain
 
     def value(self, value):
         if value <= self.domain.begin:
@@ -631,7 +523,9 @@ class Interval(Trapezoidal):
     '''
 
     def __init__(self, a, b):
-        self.domain = RationalRange(begin=a, end=b)
+
+        super(Interval, self).__init__(a, b)
+
         self.domain.begin = a-2*(b-a)
         self.domain.end = b+2*(b-a)
         self.begin_tol = a
@@ -660,8 +554,7 @@ class Point(Subset):
     '''
 
     def __init__(self, a):
-        self.domain.begin = a
-        self.domain.end = a
+        super(Point, self).__init__(a, a)
 
     def value(self, x):
         if x != self.domain.begin:
@@ -671,13 +564,7 @@ class Point(Subset):
         else:
             return -1
 
-    def traversal(self):
-        i = 1
-        while i <= ACCURACY:
-            yield self.domain.begin
-            i = i+1
-
-    def plot(self):
+    def plot(self, verbose=True):
         p.scatter([self.domain.begin], [1.0], 20)
         p.plot(self.domain.begin, 1.0)
 
@@ -698,30 +585,30 @@ class Gaussian(Subset):
     '''
 
     def __init__(self, mu, omega):
-        self.mu = float(mu)
+
+        super(Gaussian, self).__init__(mu-5*omega, mu+5*omega)
+
+        self.median = float(mu)
         self.omega = float(omega)
 
-        self.domain.begin = mu-5*omega
-        self.domain.end = mu+5*omega
-
     def value(self, x):
-        return round(math.exp(-((x-self.mu)**2)/(2*self.omega**2)), 5)
+        return round(math.exp(-((x-self.median)**2)/(2*self.omega**2)), 5)
 
-    def plot(self):
-        x = []
-        y = []
+    def plot(self, verbose=True):
+        xxx = []
+        yyy = []
         for i in self.domain:
-            x.append(i)
-            y.append(self.value(i))
-        p.plot(x, y)
+            xxx.append(i)
+            yyy.append(self.value(i))
+        p.plot(xxx, yyy)
         p.plot(self.domain.end+(self.domain.end-self.domain.begin)/3, -0.1)
-        p.text(self.mu, 1.00, str(self.mu))
+        p.text(self.median, 1.00, str(self.median))
 
     def centr(self):
-        return self.mu
+        return self.median
 
     def mode(self):
-        return self.mu
+        return self.median
 
     def card(self):
         return round(math.sqrt(2*math.pi)*self.omega, 5)
