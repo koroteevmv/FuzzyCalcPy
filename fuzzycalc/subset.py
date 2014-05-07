@@ -59,6 +59,8 @@ class Subset(object):
         >>> A.value(0.0)
         0.60653
         '''
+        if not key in self.domain:
+            return 0.0
         try:
             return self.values[key]
         except KeyError:
@@ -169,8 +171,6 @@ class Subset(object):
         return res
 
     def __getitem__(self, key):
-        if not key in self.domain:
-            raise KeyError
         return self.value(key)
     def __setitem__(self, key, value):
         if not key in self.domain:
@@ -192,15 +192,14 @@ class Subset(object):
         sum_ = 0.0
         j = 0.0
         for i in self.domain:
-            sum_ += self.value(i)*i
-            j += self.value(i)
+            sum_ += self[i] * i
+            j += self[i]
         try:
             return sum_/j
         except ZeroDivisionError:
             return None
 
     def card(self):
-        # TODO отладить инвариантность при разных значениях точности
         '''
         Возвращает мощность нечеткого подмножества
         Синтаксис:
@@ -228,77 +227,65 @@ class Subset(object):
         20.0
         '''
         res = self.domain.begin
-        for i in self.domain():
+        for i in self.domain:
             if self.value(i) > self.value(res):
                 res = i
         return res
 
     def euclid_distance(self, other):
-        begin = min(self.domain.begin, other.begin)
-        end = max(self.domain.end, other.end)
-        i = begin
-        k = 0.0
-        delta = (end-begin)/ACCURACY
+        begin = min(self.domain.begin, other.domain.begin)
+        end = max(self.domain.end, other.domain.end)
+        acc = max(self.domain.acc, other.domain.acc)
+
+        domain = RationalRange(begin, end, acc=acc)
+
         summ = 0.0
-        while i <= end:
+        for i in domain:
             summ += (self.value(i)-other.value(i))**2
-            i += delta
-            k += 1.0
-        return math.sqrt(summ/k)
+
+        return math.sqrt(summ/acc)
 
     def hamming_distance(self, other):
-        begin = min(self.domain.begin, other.begin)
-        end = max(self.domain.end, other.end)
-        i = begin
-        k = 0.0
-        delta = (end-begin)/ACCURACY
+        begin = min(self.domain.begin, other.domain.begin)
+        end = max(self.domain.end, other.domain.end)
+        acc = max(self.domain.acc, other.domain.acc)
+
+        domain = RationalRange(begin, end, acc=acc)
+
         summ = 0.0
-        while i <= end:
+        for i in domain:
             summ += abs(self.value(i)-other.value(i))
-            i += delta
-            k += 1.0
-        return summ/k
+
+        return summ/acc
+
+    def _fuzzy_algebra(self, other, operation):
+        if isinstance(self, Point) or isinstance(other, Point):
+            raise NotImplementedError
+        if isinstance(other, float) or isinstance(other, int):
+            raise NotImplementedError
+
+        begin = min(self.domain.begin, other.domain.begin)
+        end = max(self.domain.end, other.domain.end)
+        acc = max(self.domain.acc, other.domain.acc)
+
+        domain = RationalRange(begin, end, acc=acc)
+        res = Subset(domain=domain)
+        for i in res.domain:
+            res[i] = max(
+                        min(
+                            operation(self[i], other[i]),
+                        1),
+                     0)
+        return res
 
     def __add__(self, other):
-        if isinstance(self, Point) or isinstance(other, Point):
-            raise NotImplementedError
-        if isinstance(other, float) or isinstance(other, int):
-            raise NotImplementedError
-        begin = min(self.domain.begin, other.begin)
-        end = max(self.domain.end, other.end)
-        res = Subset(begin, end)
-        for i in res.domain:
-            res[i] = min(self.value(i)+other.value(i), 1)
-        return res
+        return self._fuzzy_algebra(other, lambda x, y: x + y)
 
     def __sub__(self, other):
-        if isinstance(self, Point) or isinstance(other, Point):
-            raise NotImplementedError
-        if isinstance(other, float) or isinstance(other, int):
-            raise NotImplementedError
-        begin = min(self.domain.begin, other.begin)
-        end = max(self.domain.end, other.end)
-        res = Subset(begin, end)
-        for i in res.domain:
-            res[i] = max(self.value(i)-other.value(i), 0)
-        return res
+        return self._fuzzy_algebra(other, lambda x, y: x - y)
 
     def __mul__(self, other):
-        if isinstance(self, Point) or isinstance(other, Point):
-            raise NotImplementedError
-        if isinstance(other, float) or isinstance(other, int):
-            begin = self.domain.begin
-            end = self.domain.end
-            res = Subset(begin, end)
-            for i in res.domain:
-                res[i] = min(self.value(i)*other, 1)
-            return res
-        begin = min(self.domain.begin, other.begin)
-        end = max(self.domain.end, other.end)
-        res = Subset(begin, end)
-        for i in res.domain:
-            res[i] = self.value(i)*other.value(i)
-        return res
+        return self._fuzzy_algebra(other, lambda x, y: x * y)
 
     def __pow__(self, other):
         if not(isinstance(other, float) or isinstance(other, int)):
@@ -317,31 +304,17 @@ class Subset(object):
         return self.__neg__()
 
     def __neg__(self):
-        res = Subset(self.domain.begin, self.domain.end)
+        res = Subset(domain=self.domain)
         i = res.domain.begin
-        while i <= res.domain.end:
-            i = i+(res.domain.end-res.domain.begin)/ACCURACY
+        for i in res.domain:
             res[i] = 1 - self.value(i)
+        return res
 
     def __and__(self, other):
-        begin = min(self.domain.begin, other.domain.begin)
-        end = max(self.domain.end, other.domain.end)
-        res = Subset(begin, end)
-        i = res.domain.begin
-        while i <= res.domain.end:
-            i = i+(res.domain.end-res.domain.begin)/ACCURACY
-            res[i] = min(self.value(i), other.value(i))
-        return res
+        return self._fuzzy_algebra(other, lambda x, y: min(x, y))
 
     def __or__(self, other):
-        begin = min(self.domain.begin, other.domain.begin)
-        end = max(self.domain.end, other.domain.end)
-        res = Subset(begin, end)
-        i = res.domain.begin
-        while i <= res.domain.end:
-            i = i+(res.domain.end-res.domain.begin)/ACCURACY
-            res[i] = max(self.value(i), other.value(i))
-        return res
+        return self._fuzzy_algebra(other, lambda x, y: max(x, y))
 
     def __abs__(self):
         return self.card()
@@ -403,10 +376,8 @@ class Trapezoidal(Subset):
             множества. Подробнее см. RationalRange и IntegerRange.
 
         Attributes:
-            begin
             begin_tol
             end_tol
-            end
     '''
 
     def __init__(self, points, domain=None):
@@ -420,23 +391,10 @@ class Trapezoidal(Subset):
         self.end_tol = float(end_tol)
         self.domain.end = float(end)
 
-        self.points[begin] = 0.0
-        self.points[begin_tol] = 1.0
-        self.points[end_tol] = 1.0
-        self.points[end] = 0.0
-
-    def value(self, x):
-        if x <= self.domain.begin:
-            return 0.0
-        elif self.domain.begin < x < self.begin_tol:
-            return (x-self.domain.begin)/(self.begin_tol-self.domain.begin)
-        elif self.begin_tol <= x <= self.end_tol:
-            return 1.0
-        elif self.end_tol < x <= self.domain.end:
-            return (x-self.domain.end)/(self.end_tol-self.domain.end)
-        elif self.domain.end < x:
-            return 0.0
-        else: return -1
+        self[begin] = 0.0
+        self[begin_tol] = 1.0
+        self[end_tol] = 1.0
+        self[end] = 0.0
 
     def card(self):
         return (self.begin_tol-self.domain.begin)/2 + \
@@ -488,24 +446,7 @@ class Triangle(Trapezoidal):
 
     def __init__(self, a, b, c, domain=None):
 
-        super(Triangle, self).__init__(a, c)
-
-        self.begin_tol = b
-        self.end_tol = b
-        self.points[self.begin_tol] = 1.0
-
-    def value(self, value):
-        if value <= self.domain.begin:
-            return 0.0
-        elif self.domain.begin < value <= self.begin_tol:
-            return (value - self.domain.begin) / \
-                    (self.begin_tol - self.domain.begin)
-        elif self.begin_tol < value <= self.domain.end:
-            return (value - self.domain.end) / \
-                    (self.begin_tol - self.domain.end)
-        elif self.domain.end < value:
-            return 0.0
-        else: return -1
+        super(Triangle, self).__init__((a, b, b, c))
 
     def mode(self):
         return self.begin_tol
@@ -523,29 +464,19 @@ class Interval(Trapezoidal):
     '''
 
     def __init__(self, a, b):
-
-        super(Interval, self).__init__(a, b)
-
-        self.domain.begin = a-2*(b-a)
-        self.domain.end = b+2*(b-a)
-        self.begin_tol = a
-        self.end_tol = b
-
-    def value(self, value):
-        if value < self.begin_tol:
-            return 0.0
-        elif self.begin_tol <= value <= self.end_tol:
-            return 1.0
-        elif self.end_tol < value:
-            return 0.0
-        else:
-            return -1
+        super(Interval, self).__init__((a, a, b, b))
 
     def card(self):
-        return self.domain.end-self.begin_tol
+        return self.end_tol-self.begin_tol
+
+    def value(self, value):
+        if value in self.domain:
+            return 1.0
+        else:
+            return 0.0
 
 
-class Point(Subset):
+class Point(Trapezoidal):
     '''
     Реализует нечеткое множество состоящее из одной точки.
     Синтаксис:
@@ -554,7 +485,7 @@ class Point(Subset):
     '''
 
     def __init__(self, a):
-        super(Point, self).__init__(a, a)
+        super(Point, self).__init__((a, a, a, a))
 
     def value(self, x):
         if x != self.domain.begin:

@@ -3,5 +3,5 @@
 Общие ресурсы библиотеки fuzzycalc
 '''
 
-ACCURACY = 1500
+ACCURACY = 1000
 PRECISION = 0.00000001
