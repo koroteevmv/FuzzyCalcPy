@@ -41,19 +41,19 @@ class FuzzySet(object):
     {}
 
     Параметры конструктора:
-    begin
-         начало интервала определения классификатора
-    end
-         конец интервала определения классификатора
-    name
-         имя классификатора
+        begin
+             начало интервала определения классификатора
+        end
+             конец интервала определения классификатора
+        name
+             имя классификатора
+        domain
 
     Поля класса:
         Sets
             Ассоциативный массив, содержащий, соответственно, имя и объект типа
             Subset, для каждого терма нечеткого множества.
-        begin
-        end
+        domain
         name
     '''
 
@@ -589,15 +589,17 @@ class Classifier(FuzzySet):
         peaks.insert(0, begin)
         peaks.append(end)
         overlap = math.tan(float(overlap)*math.pi/2)
-        for i in range(len(peaks)):
+        print "CLASSIFIER"
+        print len(peaks)-2, peaks
+        for i in range(len(peaks)-2):
+            print "   " + str(i)
             left = (peaks[i+1]-peaks[i])/(overlap+2)
             right = (peaks[i+2]-peaks[i+1])/(overlap+2)
             begin = peaks[i+1]-left*(1+overlap)
             begin_tol = peaks[i+1]-left
             end_tol = peaks[i+1]+right
             end = peaks[i+1]+right*(1+overlap)
-            self.add_term(Trapezoidal(begin=begin, begin_tol=begin_tol,
-                                        end_tol=end_tol, end=end),
+            self.add_term(Trapezoidal((begin, begin_tol, end_tol, end)),
                             name=str(i))
 
 if __name__ == "__main__":
