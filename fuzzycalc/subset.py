@@ -7,6 +7,7 @@
 
 from .common import ACCURACY
 from .domain import RationalRange, IntegerRange
+##from .algebra import SubsetAlgebra, NumbersAlgebra
 
 import pylab as p
 import math
@@ -43,6 +44,8 @@ class Subset(object):
         self.values[self.domain.end] = 0.0
         self.points[self.domain.begin] = 0.0
         self.points[self.domain.end] = 0.0
+
+        self._algebra = SubsetAlgebra()
 
     def value(self, key):
         '''
@@ -258,44 +261,20 @@ class Subset(object):
 
         return summ/acc
 
-    def _fuzzy_algebra(self, other, operation):
-        if isinstance(self, Point) or isinstance(other, Point):
-            raise NotImplementedError
-        if isinstance(other, float) or isinstance(other, int):
-            raise NotImplementedError
-
-        begin = min(self.domain.begin, other.domain.begin)
-        end = max(self.domain.end, other.domain.end)
-        acc = max(self.domain.acc, other.domain.acc)
-
-        domain = RationalRange(begin, end, acc=acc)
-        res = Subset(domain=domain)
-        for i in res.domain:
-            res[i] = max(
-                        min(
-                            operation(self[i], other[i]),
-                        1),
-                     0)
-        return res
-
     def __add__(self, other):
-        return self._fuzzy_algebra(other, lambda x, y: x + y)
+        return self._algebra.__add__(self, other)
 
     def __sub__(self, other):
-        return self._fuzzy_algebra(other, lambda x, y: x - y)
+        return self._algebra.__sub__(self, other)
 
     def __mul__(self, other):
-        return self._fuzzy_algebra(other, lambda x, y: x * y)
+        return self._algebra.__mul__(self, other)
+
+    def __div__(self, other):
+        return self._algebra.__div__(self, other)
 
     def __pow__(self, other):
-        if not(isinstance(other, float) or isinstance(other, int)):
-            raise NotImplementedError
-        begin = self.domain.begin
-        end = self.domain.end
-        res = Subset(begin, end)
-        for i in res.domain:
-            res[i] = min(self.value(i)**other, 1)
-        return res
+        return self._algebra.__pow__(self, other)
 
     def __invert__(self):
         return self.__neg__()
@@ -543,6 +522,61 @@ class Gaussian(Subset):
 
     def card(self):
         return round(math.sqrt(2*math.pi)*self.omega, 5)
+
+
+class Algebra():
+    pass
+
+
+class SubsetAlgebra(Algebra):
+    def __init__(self):
+        pass
+
+    def _fuzzy_algebra(self, one, other, operation):
+##        if isinstance(self, Point) or isinstance(other, Point):
+##            raise NotImplementedError
+        if isinstance(other, float) or isinstance(other, int):
+            raise NotImplementedError
+
+        begin = min(one.domain.begin, other.domain.begin)
+        end = max(one.domain.end, other.domain.end)
+        acc = max(one.domain.acc, other.domain.acc)
+
+        domain = RationalRange(begin, end, acc=acc)
+        res = Subset(domain=domain)
+        for i in res.domain:
+            res[i] = max(
+                        min(
+                            operation(one[i], other[i]),
+                        1),
+                     0)
+        return res
+
+    def __add__(self, one, other):
+        return self._fuzzy_algebra(one, other, lambda x, y: x + y)
+
+    def __sub__(self, one, other):
+        return self._fuzzy_algebra(one, other, lambda x, y: x - y)
+
+    def __mul__(self, one, other):
+        return self._fuzzy_algebra(one, other, lambda x, y: x * y)
+
+    def __div__(self, one, other):
+        raise NotImplementedError
+
+    def __pow__(self, one, other):
+        if not(isinstance(other, float) or isinstance(other, int)):
+            raise NotImplementedError
+        begin = one.domain.begin
+        end = one.domain.end
+        res = Subset(begin, end)
+        for i in res.domain:
+            res[i] = min(one.value(i)**other, 1)
+        return res
+
+class NumbersAlgebra(Algebra):
+    pass
+
 
 if __name__ == "__main__":
     import doctest

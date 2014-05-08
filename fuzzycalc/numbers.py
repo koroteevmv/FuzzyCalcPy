@@ -117,6 +117,12 @@ class TrapExt(Subset):
         mid = lvl.domain.end - lvl.domain.begin
         return tol*(1-abs(2.0*mid-supp-tol)/(0-tol))
 
+    def _fuzzy_algebra(self, other, operation):
+        if isinstance(self, Point) or isinstance(other, Point):
+            raise NotImplementedError
+        if isinstance(other, float) or isinstance(other, int):
+            other = TrapExt((other, other, other, other))
+
     def __add__(self, other):
         if isinstance(other, float) or isinstance(other, int):
             other = TrapExt((other, other, other, other))

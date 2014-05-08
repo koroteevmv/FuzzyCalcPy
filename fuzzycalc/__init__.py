@@ -15,3 +15,4 @@ import fuzzycalc.numbers
 import fuzzycalc.set
 import fuzzycalc.subset
 import fuzzycalc.tnorm
+import fuzzycalc.algebra

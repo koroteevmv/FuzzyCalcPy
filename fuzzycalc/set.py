@@ -344,13 +344,17 @@ class TriangleClassifier(FuzzySet):
         if not names:
             raise ValueError
         if not edge:
-            wide = (end-begin)*(cross)/(len(names)*2-2)
+            # edge = False
+            wide = (end-begin) * cross/(len(names)-1)
             step = (end-begin)/(len(names)-1)
+            wide = wide / 2
             mode = 0
         else:
-            wide = (end-begin)*(cross)/((len(names)+1)*2)
-            step = (end-begin)/(len(names)+1.0)
-            mode = (end-begin)/(len(names)+1.0)
+            # edge = True
+            wide = (end - begin) / (len(names) + 1 - cross)
+            wide = wide / 2
+            mode = wide
+            step = 2 * wide / cross
         for name in names:
             self.add_term(Triangle(mode-wide, mode, mode+wide), name=name)
             mode = mode+step
@@ -394,140 +398,24 @@ class GaussianClassifier(FuzzySet):
 
         if not names:
             raise ValueError
-        if edge == 0:
-            wide = (end-begin)*(cross)/(len(names)*2-2)
+        if not edge:
+            # edge = False
+            wide = (end-begin) * cross/(len(names)-1)
             step = (end-begin)/(len(names)-1)
+            wide = wide / 2
             mode = 0
         else:
-            wide = (end-begin)*(cross)/((len(names)+1)*2)
-            step = (end-begin)/(len(names)+1)
-            mode = (end-begin)/(len(names)+1)
+            # edge = True
+            wide = (end - begin) / (len(names) + 1 - cross)
+            wide = wide / 2
+            mode = wide
+            step = 2 * wide / cross
         for name in names:
-            self.add_term(Gaussian(mode, wide), name=name)
+            self.add_term(Gaussian(mode, wide/3), name=name)
             mode = mode+step
 
-def std_2_classificator(begin=0.0, end=1.0, name='', gauss=False):
-    '''
-    Процедура создания равномерного линейного или гауссового классификатора,
-    состоящего из двух термов. Термы маркируются латинскими цифрами
-    ('I', 'II', и т. д. ). Вспомогательная процедура, призванная
-    облегчить и ускорить создание классификаторов.
-    Синтаксис:
-        >>> D = std_2_Classificator(begin = 0, end = 100,
-                                    name = 'percentage', gauss = True)
 
-    Параметры:
-        begin, end
-            задают границы области определения классификатора
-        name
-            имя классификатора
-        gauss
-            если True, создается классификатор с термами в виде гауссиан.
-            Иначе - с треугольными термами. По умолчанию - False
-    '''
-    if gauss:
-        return GaussianClassifier(begin=begin, end=end, names=['I', 'II'],
-                                    name=name, cross=2.0)
-    else:
-        return TriangleClassifier(begin=begin, end=end, names=['I', 'II'],
-                                    name=name, cross=2.0)
-
-def std_3_classificator(begin=0.0, end=1.0, name='', gauss=False):
-    '''
-    Процедура создания равномерного линейного или гауссового классификатора,
-    состоящего из трех термов. Термы маркируются латинскими цифрами
-    ('I', 'II', и т. д. ). Вспомогательная процедура, призванная
-    облегчить и ускорить создание классификаторов.
-    Синтаксис:
-        >>> D = std_3_Classificator(begin = 0, end = 100,
-                                    name = 'percentage', gauss = True)
-
-    Параметры:
-        begin, end
-            задают границы области определения классификатора
-        name
-            имя классификатора
-        gauss
-            если True, создается классификатор с термами в виде гауссиан.
-            Иначе - с треугольными термами. По умолчанию - False
-    '''
-    if gauss:
-        return GaussianClassifier(begin=begin, end=end,
-                                    names=['I', 'II', 'III'],
-                                    name=name, cross=2.0)
-    else:
-        return TriangleClassifier(begin=begin, end=end,
-                                    names=['I', 'II', 'III'],
-                                    name=name, cross=2.0)
-
-def std_5_classificator(begin=0.0, end=1.0, name='', gauss=False):
-    '''
-    Процедура создания равномерного линейного или гауссового классификатора,
-    состоящего из пяти термов. Термы маркируются латинскими цифрами
-    ('I', 'II', и т. д. ). Вспомогательная процедура, призванная
-    облегчить и ускорить создание классификаторов.
-    Синтаксис:
-        >>> D = std_5_Classificator(begin = 0, end = 100,
-                                    name = 'percentage', gauss = True)
-
-    Параметры:
-        begin, end
-            задают границы области определения классификатора
-        name
-            имя классификатора
-        gauss
-            если True, создается классификатор с термами в виде гауссиан.
-            Иначе - с треугольными термами. По умолчанию - False
-    '''
-    if gauss:
-        return GaussianClassifier(begin=begin,
-                                    end=end,
-                                    names=['I', 'II', 'III', 'IV', 'V'],
-                                    name=name,
-                                    cross=2.0)
-    else:
-        return TriangleClassifier(begin=begin,
-                                    end=end,
-                                    names=['I', 'II', 'III', 'IV', 'V'],
-                                    name=name,
-                                    cross=2.0)
-
-def std_7_classificator(begin=0.0, end=1.0, name='', gauss=False):
-    '''
-    Процедура создания равномерного линейного или гауссового классификатора,
-    состоящего из семи термов. Термы маркируются латинскими цифрами
-    ('I', 'II', и т. д. ). Вспомогательная процедура, призванная
-    облегчить и ускорить создание классификаторов.
-    Синтаксис:
-        >>> D = std_7_Classificator(begin = 0, end = 100,
-                                    name = 'percentage', gauss = True)
-
-    Параметры:
-        begin, end
-            задают границы области определения классификатора
-        name
-            имя классификатора
-        gauss
-            если True, создается классификатор с термами в виде гауссиан.
-            Иначе - с треугольными термами. По умолчанию - False
-    '''
-    if gauss:
-        return GaussianClassifier(begin=begin,
-                                    end=end,
-                                    names=['I', 'II', 'III', 'IV',
-                                            'V', 'VI', 'VII'],
-                                    name=name,
-                                    cross=2.0)
-    else:
-        return TriangleClassifier(begin=begin,
-                                    end=end,
-                                    names=['I', 'II', 'III', 'IV',
-                                            'V', 'VI', 'VII'],
-                                    name=name,
-                                    cross=2.0)
-
-
-class Classifier(FuzzySet):
+class Partition(FuzzySet):
     '''
     Данный класс создает линейный неравномерный классификатор по точкам,
     указанным в параметрах. Характерной особенностью данного классификатора
@@ -535,7 +423,7 @@ class Classifier(FuzzySet):
     термов равна 1,0. Классификатор строится на действительном интервале.
     Термы классификатора именуются арабскими числами, начиная с 1.
     Синтаксис:
-    >>> Clas = Classifier(p = [0.0, 0.1, 0.3, 0.4, 0.6, 1.0], u = 0.2)
+    >>> Clas = Partition(p = [0.0, 0.1, 0.3, 0.4, 0.6, 1.0], u = 0.2)
 
     Параметры:
     name
@@ -554,7 +442,7 @@ class Classifier(FuzzySet):
     def __init__(self, begin=0.0, end=1.0, domain=None,
                         peaks=None, overlap=1.0, name=''):
         '''
-        >>> A  =  Classifier(begin = 10, end = 20,
+        >>> A  =  Partition(begin = 10, end = 20,
                              peaks = [10, 13, 15, 20],
                              overlap = 0.2, name = 'sample classifier')
         >>> print A.begin
@@ -583,16 +471,13 @@ class Classifier(FuzzySet):
 
         if not domain:
             domain = RationalRange(begin, end)
-        super(Classifier, self).__init__(domain=domain, name=name)
+        super(Partition, self).__init__(domain=domain, name=name)
 
         peaks = sorted(peaks)
         peaks.insert(0, begin)
         peaks.append(end)
         overlap = math.tan(float(overlap)*math.pi/2)
-        print "CLASSIFIER"
-        print len(peaks)-2, peaks
         for i in range(len(peaks)-2):
-            print "   " + str(i)
             left = (peaks[i+1]-peaks[i])/(overlap+2)
             right = (peaks[i+2]-peaks[i+1])/(overlap+2)
             begin = peaks[i+1]-left*(1+overlap)
